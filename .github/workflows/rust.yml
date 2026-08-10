@@ -1,0 +1,53 @@
+name: rust
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: test + lint + boundary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: fmt
+        run: cargo fmt --all -- --check
+
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test --workspace
+
+      - name: sync-engine boundary check (§15)
+        run: |
+          # sync-engine must depend on schema-core and nothing else — no store,
+          # api, or adapter-host (the §15 invariant that makes the engine pure).
+          for crate in store api adapter-host; do
+            if cargo tree -p sync-engine --prefix none 2>/dev/null | grep -q "^$crate v"; then
+              echo "::error::sync-engine depends on $crate — §15 boundary violation (engine must be pure, I/O-free)"
+              exit 1
+            fi
+          done
+          echo "OK: sync-engine dependency boundary intact"
+
+  codegen-staleness:
+    name: codegen staleness (§3.6)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: regenerate
+        run: cargo xtask codegen
+      - name: fail if generated output drifted
+        run: git diff --exit-code

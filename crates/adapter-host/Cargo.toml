@@ -1,0 +1,11 @@
+[package]
+name = "adapter-host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Embeds a JS runtime (deno_core) to run TS adapters in-process, sandboxed, with capability enforcement and boundary validation (§5.5)."
+
+[dependencies]
+schema-core.workspace = true

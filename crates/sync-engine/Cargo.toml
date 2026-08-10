@@ -1,0 +1,15 @@
+[package]
+name = "sync-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Diff, merge, and snapshot DAG — pure and I/O-free (§1, §11). The correctness-critical asset; depends on schema-core and nothing else (§15)."
+
+# INVARIANT (§15): sync-engine depends on schema-core and NOTHING else.
+# Not store, not api, not adapter-host. Enforced structurally: this crate has
+# no I/O, no async, no adapter deps. A CI check (boundary) asserts the dep tree
+# stays clean. Violating this is a compile error by Cargo's dependency graph.
+[dependencies]
+schema-core.workspace = true

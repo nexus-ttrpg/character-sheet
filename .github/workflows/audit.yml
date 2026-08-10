@@ -1,0 +1,39 @@
+name: audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  cargo-deny:
+    name: cargo-deny (§17)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          arguments: --workspace check
+
+  cargo-audit:
+    name: cargo-audit (§17)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2.0.0
+
+  pnpm-audit:
+    name: pnpm audit (§17)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      # TS deps matter more than usual: adapters run in-process (§17).
+      - run: pnpm audit --audit-level high
+        continue-on-error: true

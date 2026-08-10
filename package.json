@@ -1,0 +1,21 @@
+{
+  "name": "nexus-sheet",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cross-VTT character synchronization platform for PF2e / SF2e.",
+  "license": "MIT OR Apache-2.0",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,29 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock.bak
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+pnpm-debug.log*
+dist/
+*.tsbuildinfo
+
+# Agent / editor tooling state (CLAUDE.md at root IS tracked; this is runtime state)
+.claude/
+
+# Generated artifacts (committed by design — see §3.6; this list is for
+# local-only outputs, NOT the committed generated packages)
+/canonical.schema.json
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Environment
+.env
+.env.*
+!.env.example

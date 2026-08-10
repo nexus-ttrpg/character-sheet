@@ -1,0 +1,10 @@
+[package]
+name = "schema-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Canonical character model — the source of truth (§3.6). All downstream schema artifacts are generated from these types."
+
+[dependencies]

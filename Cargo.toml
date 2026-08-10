@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/schema-core",
+    "crates/schema-pf2e",
+    "crates/schema-sf2e",
+    "crates/sync-engine",
+    "crates/store",
+    "crates/adapter-host",
+    "crates/api",
+    "cli",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.97"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexus-sheet/nexus-sheet"
+authors = ["Nexus Sheet contributors"]
+
+[workspace.dependencies]
+schema-core = { path = "crates/schema-core" }
+schema-pf2e = { path = "crates/schema-pf2e" }
+schema-sf2e = { path = "crates/schema-sf2e" }
+sync-engine = { path = "crates/sync-engine" }
+store = { path = "crates/store" }
+adapter-host = { path = "crates/adapter-host" }
+api = { path = "crates/api" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

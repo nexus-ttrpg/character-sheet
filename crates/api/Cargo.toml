@@ -1,0 +1,14 @@
+[package]
+name = "api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Axum API — REST over GraphQL, OpenAPI via utoipa (§13). CRUD, connections, push/pull/diff, webhooks, auth."
+
+[dependencies]
+schema-core.workspace = true
+sync-engine.workspace = true
+store.workspace = true
+adapter-host.workspace = true
