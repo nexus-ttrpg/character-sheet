@@ -5,4 +5,21 @@
 //! project exhaustively property-testable (§16) and is the concrete reason
 //! sync-engine is I/O-free.
 //!
-//! Phase 0.1: scaffold only. Engine + proptest suite land in 0.5.
+//! ## Load-bearing invariants (§11)
+//!
+//! - `merge` is a pure function of three `CharacterBuild`s — no I/O, no async.
+//! - Conflicts are never auto-resolved (§11.3): changed on both sides to
+//!   different values → conflict, returned for a human.
+//! - Diffing walks the schema structurally, with identity-matched collection
+//!   pairing (§11.2) so inserting one feat mid-list doesn't report the whole
+//!   tail as changed.
+//! - Rollback is `revert`, not `reset --hard` (§11.4): history is an immutable
+//!   snapshot DAG, never destructively rewritten.
+
+pub mod diff;
+pub mod merge;
+pub mod snapshot;
+
+pub use diff::{diff, Change, FieldDiff};
+pub use merge::{merge, Conflict, MergePreview, Resolution};
+pub use snapshot::{Snapshot, SnapshotOrigin};

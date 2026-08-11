@@ -13,3 +13,12 @@ description = "Diff, merge, and snapshot DAG — pure and I/O-free (§1, §11). 
 # stays clean. Violating this is a compile error by Cargo's dependency graph.
 [dependencies]
 schema-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+semver.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

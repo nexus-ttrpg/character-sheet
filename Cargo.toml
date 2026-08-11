@@ -40,6 +40,7 @@ semver = { version = "1", features = ["serde"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 thiserror = "2"
 garde = "0.20"
+proptest = "1"
 
 [profile.release]
 opt-level = 3
