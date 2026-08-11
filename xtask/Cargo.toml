@@ -13,3 +13,6 @@ name = "xtask"
 path = "src/main.rs"
 
 [dependencies]
+schema-core.workspace = true
+schemars.workspace = true
+serde_json.workspace = true

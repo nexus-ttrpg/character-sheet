@@ -15,6 +15,8 @@
     "lint": "pnpm -r --if-present lint"
   },
   "devDependencies": {
+    "json-schema-to-typescript": "^15.0.4",
+    "json-schema-to-zod": "^2.8.1",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
   }

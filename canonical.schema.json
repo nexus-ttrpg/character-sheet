@@ -1,0 +1,1094 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "AbilityBoost": {
+      "description": "An ability boost or flaw (§3.3).",
+      "properties": {
+        "source": {
+          "$ref": "#/definitions/AbilityBoostSource"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "type": "object"
+    },
+    "AbilityBoostSource": {
+      "description": "The source of an ability boost or flaw (§3.3).",
+      "enum": [
+        "ancestry",
+        "background",
+        "class",
+        "free"
+      ],
+      "type": "string"
+    },
+    "AbilityScoreEntry": {
+      "additionalProperties": false,
+      "description": "The components that produce an ability score (§3.3).\n\nThe final score is *derived*, not stored — computed by `SystemPlugin::derived_stats` (§10). Storing components lets adapters import from platforms that recompute the final number without reverse-engineering.",
+      "properties": {
+        "boosts": {
+          "description": "Boosts applied to this ability (ancestry, background, class, free).",
+          "items": {
+            "$ref": "#/definitions/AbilityBoost"
+          },
+          "type": "array"
+        },
+        "flaws": {
+          "description": "Flaws applied to this ability.",
+          "items": {
+            "$ref": "#/definitions/AbilityBoost"
+          },
+          "type": "array"
+        },
+        "itemBonus": {
+          "description": "Item bonuses (or penalties, if negative) applied to this ability.",
+          "format": "int8",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "boosts",
+        "flaws",
+        "itemBonus"
+      ],
+      "type": "object"
+    },
+    "AbilityScoreKey": {
+      "description": "The six PF2e ability score keys (§3.3). SF2e reuses the same chassis (§3.4). Used as a `BTreeMap` key, so derived `Ord` (alphabetical) gives stable serialization order for content hashing (§9.2).",
+      "enum": [
+        "str",
+        "dex",
+        "con",
+        "int",
+        "wis",
+        "cha"
+      ],
+      "type": "string"
+    },
+    "ActionEntry": {
+      "additionalProperties": false,
+      "description": "An action entry (§3.3).",
+      "properties": {
+        "actionType": {
+          "$ref": "#/definitions/ActionType"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "actionType",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "ActionType": {
+      "description": "Action type for the three-action economy (§3.4 — shared chassis).",
+      "enum": [
+        "single",
+        "twoAction",
+        "threeAction",
+        "free",
+        "reaction",
+        "oneMinute"
+      ],
+      "type": "string"
+    },
+    "Ancestry": {
+      "additionalProperties": false,
+      "description": "Ancestry (§3.3).",
+      "properties": {
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "Background": {
+      "additionalProperties": false,
+      "description": "Background (§3.3).",
+      "properties": {
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "CharacterBuild": {
+      "additionalProperties": false,
+      "description": "Permanent, synchronizable build data (§3.3).\n\nThis is what the sync engine diffs and merges (§11). `merge()` takes `&CharacterBuild` — it cannot see `session` or `meta` (§3.1, §11.3).",
+      "properties": {
+        "abilityScores": {
+          "additionalProperties": {
+            "$ref": "#/definitions/AbilityScoreEntry"
+          },
+          "description": "`BTreeMap` for deterministic serialization (§3.3, §9.2).",
+          "type": "object"
+        },
+        "actions": {
+          "items": {
+            "$ref": "#/definitions/ActionEntry"
+          },
+          "type": "array"
+        },
+        "ancestry": {
+          "$ref": "#/definitions/Ancestry"
+        },
+        "background": {
+          "$ref": "#/definitions/Background"
+        },
+        "class": {
+          "$ref": "#/definitions/ClassEntry"
+        },
+        "classFeatures": {
+          "items": {
+            "$ref": "#/definitions/ClassFeatureEntry"
+          },
+          "type": "array"
+        },
+        "companions": {
+          "items": {
+            "$ref": "#/definitions/CompanionEntry"
+          },
+          "type": "array"
+        },
+        "currencies": {
+          "$ref": "#/definitions/Currencies"
+        },
+        "drones": {
+          "description": "SF2e mechanic (§3.4).",
+          "items": {
+            "$ref": "#/definitions/DroneEntry"
+          },
+          "type": "array"
+        },
+        "equipment": {
+          "$ref": "#/definitions/Equipment"
+        },
+        "explorationActivities": {
+          "items": {
+            "$ref": "#/definitions/ExplorationActivityEntry"
+          },
+          "type": "array"
+        },
+        "familiars": {
+          "items": {
+            "$ref": "#/definitions/FamiliarEntry"
+          },
+          "type": "array"
+        },
+        "feats": {
+          "description": "Feats, tagged by category (§3.3).",
+          "items": {
+            "$ref": "#/definitions/FeatEntry"
+          },
+          "type": "array"
+        },
+        "heritage": {
+          "$ref": "#/definitions/Heritage"
+        },
+        "identity": {
+          "$ref": "#/definitions/Identity"
+        },
+        "level": {
+          "$ref": "#/definitions/Level",
+          "description": "Newtype, 1..=20 enforced on construction (§3.3)."
+        },
+        "notes": {
+          "items": {
+            "$ref": "#/definitions/NoteEntry"
+          },
+          "type": "array"
+        },
+        "proficiencies": {
+          "additionalProperties": {
+            "$ref": "#/definitions/ProficiencyRank"
+          },
+          "type": "object"
+        },
+        "reactions": {
+          "items": {
+            "$ref": "#/definitions/ReactionEntry"
+          },
+          "type": "array"
+        },
+        "skills": {
+          "additionalProperties": {
+            "$ref": "#/definitions/SkillEntry"
+          },
+          "description": "Skills, including lore (§3.3). `BTreeMap<SkillKey, SkillEntry>`.",
+          "type": "object"
+        },
+        "spellcasting": {
+          "$ref": "#/definitions/Spellcasting"
+        },
+        "vehicles": {
+          "items": {
+            "$ref": "#/definitions/VehicleEntry"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "abilityScores",
+        "actions",
+        "ancestry",
+        "background",
+        "class",
+        "classFeatures",
+        "companions",
+        "currencies",
+        "drones",
+        "equipment",
+        "explorationActivities",
+        "familiars",
+        "feats",
+        "heritage",
+        "identity",
+        "level",
+        "notes",
+        "proficiencies",
+        "reactions",
+        "skills",
+        "spellcasting",
+        "vehicles"
+      ],
+      "type": "object"
+    },
+    "CharacterMeta": {
+      "additionalProperties": false,
+      "description": "Identity, versioning, ownership (§3.2).",
+      "properties": {
+        "contentHash": {
+          "$ref": "#/definitions/ContentHash",
+          "description": "BLAKE3 of canonicalized `build` (§9.2). Not of `session` or `meta`."
+        },
+        "createdAt": {
+          "description": "ISO 8601 / RFC 3339 timestamp",
+          "format": "date-time",
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/definitions/Ulid"
+        },
+        "ownerId": {
+          "$ref": "#/definitions/Ulid"
+        },
+        "schemaVersion": {
+          "description": "Schema version — semver. Minor/patch are additive-only; major may restructure and ship a migration (§9.3).",
+          "type": "string"
+        },
+        "system": {
+          "$ref": "#/definitions/SystemId",
+          "description": "`\"pf2e\"` | `\"sf2e\"`; extensible via plugin registry (§3.2, §10)."
+        },
+        "updatedAt": {
+          "description": "ISO 8601 / RFC 3339 timestamp",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contentHash",
+        "createdAt",
+        "displayName",
+        "id",
+        "ownerId",
+        "schemaVersion",
+        "system",
+        "updatedAt"
+      ],
+      "type": "object"
+    },
+    "ClassEntry": {
+      "additionalProperties": false,
+      "description": "Class entry (§3.3). Carries the class reference plus the key ability and HP-per-level, which are needed for derived-stat computation (§10.2).",
+      "properties": {
+        "hpPerLevel": {
+          "format": "uint16",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "keyAbility": {
+          "$ref": "#/definitions/AbilityScoreKey"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "hpPerLevel",
+        "keyAbility",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "ClassFeatureEntry": {
+      "additionalProperties": false,
+      "description": "A class feature entry (§3.3).",
+      "properties": {
+        "level": {
+          "$ref": "#/definitions/Level"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "level",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "CompanionEntry": {
+      "additionalProperties": false,
+      "description": "A companion entry (§3.3, §7.5). Treated as its own mini sub-tree.",
+      "properties": {
+        "companionType": {
+          "$ref": "#/definitions/CompanionType"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "companionType",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "CompanionType": {
+      "description": "Companion type (§3.4, §7.5).",
+      "enum": [
+        "animal",
+        "eidolon",
+        "construct"
+      ],
+      "type": "string"
+    },
+    "ConditionInstance": {
+      "additionalProperties": false,
+      "description": "An active condition, including its value (§4). e.g. frightened 2.",
+      "properties": {
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        },
+        "value": {
+          "description": "The condition's numeric value, if it has one (e.g. frightened 2).",
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "ContentHash": {
+      "description": "BLAKE3 content hash (64 lowercase hex chars, §9.2)",
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "Currencies": {
+      "additionalProperties": false,
+      "description": "Currencies (§3.4). One struct with optional fields per denomination so a crossover campaign carrying both gp and credits isn't structurally impossible (§3.4).",
+      "properties": {
+        "cp": {
+          "description": "PF2e: copper.",
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "credits": {
+          "description": "SF2e: credits (§3.4).",
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gp": {
+          "description": "PF2e: gold.",
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "pp": {
+          "description": "PF2e: platinum.",
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "sp": {
+          "description": "PF2e: silver.",
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "upb": {
+          "description": "SF2e: UPB — Universal Point Base (§3.4).",
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "DroneEntry": {
+      "additionalProperties": false,
+      "description": "A drone entry — SF2e mechanic (§3.4). Structurally similar to companions but with chassis/mod slots.",
+      "properties": {
+        "chassis": {
+          "description": "Chassis type (e.g. \"combat\", \"hover\").",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mods": {
+          "description": "Installed mods.",
+          "items": {
+            "$ref": "#/definitions/SystemRefId"
+          },
+          "type": "array"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "mods",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "EncounterEffect": {
+      "additionalProperties": false,
+      "description": "An encounter effect — scene-scoped (§4).",
+      "properties": {
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "Equipment": {
+      "additionalProperties": false,
+      "description": "Equipment (§3.3).",
+      "properties": {
+        "armor": {
+          "items": {
+            "$ref": "#/definitions/ItemRef"
+          },
+          "type": "array"
+        },
+        "inventory": {
+          "items": {
+            "$ref": "#/definitions/ItemRef"
+          },
+          "type": "array"
+        },
+        "weapons": {
+          "items": {
+            "$ref": "#/definitions/ItemRef"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "armor",
+        "inventory",
+        "weapons"
+      ],
+      "type": "object"
+    },
+    "ExplorationActivityEntry": {
+      "additionalProperties": false,
+      "description": "An exploration activity entry (§3.3).",
+      "properties": {
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "FamiliarEntry": {
+      "additionalProperties": false,
+      "description": "A familiar entry (§3.3).",
+      "properties": {
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "FeatCategory": {
+      "description": "Feat category tag (§3.3, \"tagged by category\").",
+      "enum": [
+        "ancestry",
+        "class",
+        "skill",
+        "general",
+        "bonus"
+      ],
+      "type": "string"
+    },
+    "FeatEntry": {
+      "additionalProperties": false,
+      "description": "A feat entry (§3.3).",
+      "properties": {
+        "category": {
+          "$ref": "#/definitions/FeatCategory"
+        },
+        "level": {
+          "$ref": "#/definitions/Level"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "category",
+        "level",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "Heritage": {
+      "additionalProperties": false,
+      "description": "Heritage (§3.3).",
+      "properties": {
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "HitPoints": {
+      "additionalProperties": false,
+      "description": "Hit points — current, temporary, max (§4).",
+      "properties": {
+        "current": {
+          "description": "Current HP. Can be negative (dying) in PF2e.",
+          "format": "int16",
+          "type": "integer"
+        },
+        "max": {
+          "description": "Max HP. Only the max is derivable from `build`; current/temp are scene-scoped (§4, §7.2).",
+          "format": "int16",
+          "type": "integer"
+        },
+        "temporary": {
+          "description": "Temporary HP.",
+          "format": "int16",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "current",
+        "max",
+        "temporary"
+      ],
+      "type": "object"
+    },
+    "Identity": {
+      "additionalProperties": false,
+      "description": "Character identity (§3.3). The export example uses `build.identity.name` (§7.2).",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "playerName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pronouns": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "ItemRef": {
+      "additionalProperties": false,
+      "description": "A reference to an item with a quantity (§3.3).",
+      "properties": {
+        "quantity": {
+          "format": "uint32",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "quantity",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "Level": {
+      "description": "Character level, bounded 1..=20 enforced on construction (§3.3, §3.1).\n\nUses `#[serde(try_from = \"u8\")]` so deserialization enforces the bound: a payload with `\"level\": 0` or `\"level\": 21` is rejected at the boundary, not silently accepted. \"If you have a `Level`, it's valid by construction.\"",
+      "format": "uint8",
+      "minimum": 0.0,
+      "type": "integer"
+    },
+    "MagicTradition": {
+      "description": "Magic tradition (§3.4 — shared chassis).",
+      "enum": [
+        "arcane",
+        "divine",
+        "occult",
+        "primal"
+      ],
+      "type": "string"
+    },
+    "NoteEntry": {
+      "additionalProperties": false,
+      "description": "A note entry (§3.3).",
+      "properties": {
+        "body": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "body",
+        "title"
+      ],
+      "type": "object"
+    },
+    "PlatformId": {
+      "description": "Platform identifier — `\"foundry\"` | `\"roll20\"` | … (§4, §13.3).",
+      "type": "string"
+    },
+    "PointPool": {
+      "additionalProperties": false,
+      "description": "A point pool like focus points or Resolve Points (§4).",
+      "properties": {
+        "current": {
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "max": {
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "current",
+        "max"
+      ],
+      "type": "object"
+    },
+    "ProficiencyRank": {
+      "description": "The five PF2e/SF2e proficiency tiers (§3.3).\n\nOrder is `Untrained < Trained < Expert < Master < Legendary`; derived `PartialOrd` gives the right ordering, which matters for derived-stat computation (§10.2).",
+      "enum": [
+        "untrained",
+        "trained",
+        "expert",
+        "master",
+        "legendary"
+      ],
+      "type": "string"
+    },
+    "ReactionEntry": {
+      "additionalProperties": false,
+      "description": "A reaction entry (§3.3).",
+      "properties": {
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    },
+    "SessionState": {
+      "additionalProperties": false,
+      "description": "Ephemeral, per-platform session state — NOT auto-synced (§4).",
+      "properties": {
+        "conditions": {
+          "description": "Active conditions, including value (e.g. frightened 2) (§4).",
+          "items": {
+            "$ref": "#/definitions/ConditionInstance"
+          },
+          "type": "array"
+        },
+        "encounterEffects": {
+          "description": "Encounter effects — scene-scoped (§4).",
+          "items": {
+            "$ref": "#/definitions/EncounterEffect"
+          },
+          "type": "array"
+        },
+        "focusPoints": {
+          "$ref": "#/definitions/PointPool",
+          "description": "Focus points — scene-scoped (§4)."
+        },
+        "heroPoints": {
+          "description": "Hero points (§4).",
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "hitPoints": {
+          "$ref": "#/definitions/HitPoints",
+          "description": "Current HP — scene-scoped, not character-scoped (§4)."
+        },
+        "initiative": {
+          "description": "Initiative roll — scene-scoped (§4).",
+          "format": "int16",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lastObservedAt": {
+          "description": "When this session state was last observed from the platform (§4).",
+          "format": "date-time",
+          "type": "string"
+        },
+        "platform": {
+          "$ref": "#/definitions/PlatformId",
+          "description": "Which platform this session state belongs to (§4)."
+        },
+        "resolvePoints": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PointPool"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Resolve Points — SF2e only (§3.4, §4)."
+        },
+        "spellSlots": {
+          "additionalProperties": {
+            "$ref": "#/definitions/SlotUsage"
+          },
+          "description": "Spell slot usage — scene-scoped (§4).",
+          "type": "object"
+        },
+        "temporaryModifiers": {
+          "description": "Temporary modifiers — scene-scoped (§4).",
+          "items": {
+            "$ref": "#/definitions/TemporaryModifier"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "conditions",
+        "encounterEffects",
+        "focusPoints",
+        "heroPoints",
+        "hitPoints",
+        "lastObservedAt",
+        "platform",
+        "spellSlots",
+        "temporaryModifiers"
+      ],
+      "type": "object"
+    },
+    "SkillEntry": {
+      "additionalProperties": false,
+      "description": "A skill entry (§3.3). Includes lore skills.",
+      "properties": {
+        "itemBonus": {
+          "description": "Item bonus to this skill.",
+          "format": "int8",
+          "type": "integer"
+        },
+        "lore": {
+          "description": "Whether this skill is a lore skill, and if so, its name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rank": {
+          "$ref": "#/definitions/ProficiencyRank",
+          "description": "Proficiency rank for this skill."
+        }
+      },
+      "required": [
+        "itemBonus",
+        "rank"
+      ],
+      "type": "object"
+    },
+    "SlotUsage": {
+      "additionalProperties": false,
+      "description": "Spell slot usage for a given rank (§4).",
+      "properties": {
+        "expended": {
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "max": {
+          "format": "uint8",
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "expended",
+        "max"
+      ],
+      "type": "object"
+    },
+    "Slug": {
+      "description": "A slug: the cross-platform anchor for rules content (§9.1). e.g. `\"fireball\"`, `\"toughness\"`. Lowercase, hyphen-separated; validation is light in 0.2 (non-empty string).",
+      "type": "string"
+    },
+    "SpellPreparedness": {
+      "description": "How spells are prepared (§3.1 — garde asserts \"a spellcasting entry with tradition `prepared` must have a slot table\").",
+      "enum": [
+        "prepared",
+        "spontaneous",
+        "innate"
+      ],
+      "type": "string"
+    },
+    "Spellcasting": {
+      "additionalProperties": false,
+      "description": "Spellcasting (§3.3).",
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/definitions/SpellcastingEntry"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "entries"
+      ],
+      "type": "object"
+    },
+    "SpellcastingEntry": {
+      "additionalProperties": false,
+      "description": "A spellcasting entry (§3.3).",
+      "properties": {
+        "attribute": {
+          "$ref": "#/definitions/AbilityScoreKey"
+        },
+        "preparedness": {
+          "$ref": "#/definitions/SpellPreparedness"
+        },
+        "slots": {
+          "additionalProperties": {
+            "format": "uint8",
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "description": "Slot table — rank (1..=10) to slot count. Required for `Prepared` and `Spontaneous`; empty for `Innate`. Asserted by garde (§3.1).",
+          "type": "object"
+        },
+        "spells": {
+          "description": "Known/prepared spells.",
+          "items": {
+            "$ref": "#/definitions/SystemRefId"
+          },
+          "type": "array"
+        },
+        "tradition": {
+          "$ref": "#/definitions/MagicTradition"
+        }
+      },
+      "required": [
+        "attribute",
+        "preparedness",
+        "slots",
+        "spells",
+        "tradition"
+      ],
+      "type": "object"
+    },
+    "SystemId": {
+      "description": "System identifier — `\"pf2e\"` | `\"sf2e\"`; extensible via the plugin registry (§3.2, §10).",
+      "type": "string"
+    },
+    "SystemRefId": {
+      "description": "Cross-platform reference to a piece of rules content (§9.1).\n\nCarries a slug (the universal anchor) plus any platform-specific IDs the adapters have populated. The `other` map is flattened so unknown platform ID fields round-trip through older builds.",
+      "properties": {
+        "foundryUuid": {
+          "description": "Foundry compendium UUID, when an imported item resolves to a compendium source (§7.3).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "roll20Id": {
+          "description": "Roll20 attribute/id, when present.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "slug": {
+          "$ref": "#/definitions/Slug",
+          "description": "Cross-platform anchor, e.g. `\"fireball\"` (§9.1)."
+        },
+        "source": {
+          "description": "Rulebook source, e.g. `\"Player Core\"` (§9.1).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "slug"
+      ],
+      "type": "object"
+    },
+    "TemporaryModifier": {
+      "additionalProperties": false,
+      "description": "A temporary modifier — scene-scoped (§4).",
+      "properties": {
+        "bonus": {
+          "description": "The modifier value (can be negative).",
+          "format": "int16",
+          "type": "integer"
+        },
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        }
+      },
+      "required": [
+        "bonus",
+        "reference"
+      ],
+      "type": "object"
+    },
+    "Ulid": {
+      "description": "A ULID identifier (§3.2). Stored as the 26-char Crockford base32 string; string ordering matches byte ordering, preserving the natural cursor property for pagination (§18). Validation/generation of ULIDs is the store's job (0.6); here it's an opaque validated string.",
+      "type": "string"
+    },
+    "VehicleEntry": {
+      "additionalProperties": false,
+      "description": "A vehicle entry (§3.3, §3.4). Kept lightweight: role + relevant skill.",
+      "properties": {
+        "reference": {
+          "$ref": "#/definitions/SystemRefId"
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "reference"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "The top-level canonical character (§3.1).",
+  "properties": {
+    "build": {
+      "$ref": "#/definitions/CharacterBuild",
+      "description": "Permanent, sync-eligible build data (§3.3). This is what `merge()` operates on (§11.3)."
+    },
+    "extensions": {
+      "additionalProperties": true,
+      "description": "Unknown/future/homebrew fields, namespaced (§3.5).",
+      "type": "object"
+    },
+    "meta": {
+      "$ref": "#/definitions/CharacterMeta",
+      "description": "Identity, versioning, ownership (§3.2)."
+    },
+    "session": {
+      "$ref": "#/definitions/SessionState",
+      "description": "Ephemeral, per-platform, NOT auto-synced (§4). The ingest path deserializes into a `SessionTelemetry` struct that has no conversion into `CharacterBuild` (§4)."
+    }
+  },
+  "required": [
+    "build",
+    "extensions",
+    "meta",
+    "session"
+  ],
+  "title": "Character",
+  "type": "object"
+}

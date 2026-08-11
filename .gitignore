@@ -15,7 +15,7 @@ dist/
 
 # Generated artifacts (committed by design — see §3.6; this list is for
 # local-only outputs, NOT the committed generated packages)
-/canonical.schema.json
+# canonical.schema.json IS committed — it's the published schema artifact (§3.6).
 
 # Editor / OS
 .idea/
