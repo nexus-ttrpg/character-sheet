@@ -1,0 +1,35 @@
+{
+  "$comment": "Shared JSON ground-truth characters (§16). One set, consumed by both Rust and TypeScript as plain JSON. Each fixture is a CharacterBuild (the build partition only — no meta, session, or extensions).",
+  "version": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "fixtures": [
+    {
+      "file": "pf2e-level1-fighter.json",
+      "system": "pf2e",
+      "tier": "fresh",
+      "level": 1,
+      "description": "Fresh level 1 human fighter — minimal complexity, exercises basic build shape"
+    },
+    {
+      "file": "pf2e-level10-wizard.json",
+      "system": "pf2e",
+      "tier": "complex",
+      "level": 10,
+      "description": "Level 10 elf wizard — spellcasting, multiple feats, lore skills, equipment"
+    },
+    {
+      "file": "pf2e-level5-ranger.json",
+      "system": "pf2e",
+      "tier": "companion-heavy",
+      "level": 5,
+      "description": "Level 5 elf ranger — animal companion, familiar, exploration activities"
+    },
+    {
+      "file": "sf2e-level5-mechanic.json",
+      "system": "sf2e",
+      "tier": "drone-heavy",
+      "level": 5,
+      "description": "Level 5 human mechanic — drone with chassis/mods, credits/UPB, vehicle (exercises §3.4 shapes)"
+    }
+  ]
+}

@@ -512,6 +512,7 @@ dependencies = [
  "schema-core",
  "schemars",
  "semver",
+ "serde",
  "serde_json",
 ]
 

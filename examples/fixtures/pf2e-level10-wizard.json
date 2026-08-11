@@ -1,0 +1,173 @@
+{
+  "identity": {
+    "name": "Zara Morningstar",
+    "playerName": "Bob",
+    "pronouns": "she/her"
+  },
+  "ancestry": {
+    "reference": { "slug": "elf", "source": "Player Core" }
+  },
+  "heritage": {
+    "reference": { "slug": "ancient-elf", "source": "Player Core" }
+  },
+  "background": {
+    "reference": { "slug": "scholar", "source": "Player Core" }
+  },
+  "class": {
+    "reference": { "slug": "wizard", "source": "Player Core" },
+    "keyAbility": "int",
+    "hpPerLevel": 6
+  },
+  "level": 10,
+  "abilityScores": {
+    "int": {
+      "boosts": [
+        { "source": "ancestry" },
+        { "source": "class" },
+        { "source": "free" },
+        { "source": "free" },
+        { "source": "free" }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "dex": {
+      "boosts": [{ "source": "free" }, { "source": "free" }],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "con": {
+      "boosts": [{ "source": "free" }, { "source": "free" }],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "wis": {
+      "boosts": [{ "source": "background" }],
+      "flaws": [],
+      "itemBonus": 0
+    }
+  },
+  "skills": {
+    "arcana": { "rank": "master", "itemBonus": 0 },
+    "society": { "rank": "trained", "itemBonus": 0 },
+    "stealth": { "rank": "trained", "itemBonus": 0 },
+    "lore:ancient-history": { "rank": "expert", "lore": "Ancient History", "itemBonus": 0 }
+  },
+  "proficiencies": {
+    "perception": "expert",
+    "fortitude": "expert",
+    "reflex": "expert",
+    "will": "master",
+    "class-dc": "expert"
+  },
+  "feats": [
+    {
+      "reference": { "slug": "arcane-school", "source": "Player Core" },
+      "category": "class",
+      "level": 1
+    },
+    {
+      "reference": { "slug": "assurance-arcana", "source": "Player Core" },
+      "category": "skill",
+      "level": 1
+    },
+    {
+      "reference": { "slug": "reach-spell", "source": "Player Core" },
+      "category": "class",
+      "level": 2
+    },
+    {
+      "reference": { "slug": "clever-counterspell", "source": "Player Core" },
+      "category": "class",
+      "level": 4
+    },
+    {
+      "reference": { "slug": "fleet", "source": "Player Core" },
+      "category": "general",
+      "level": 6
+    },
+    {
+      "reference": { "slug": "reactive-detection", "source": "Player Core" },
+      "category": "skill",
+      "level": 8
+    },
+    {
+      "reference": { "slug": "spell-mastery", "source": "Player Core" },
+      "category": "class",
+      "level": 10
+    }
+  ],
+  "classFeatures": [
+    { "reference": { "slug": "arcane-spellcasting", "source": "Player Core" }, "level": 1 },
+    { "reference": { "slug": "arcane-bond", "source": "Player Core" }, "level": 1 },
+    { "reference": { "slug": "arcane-thesis", "source": "Player Core" }, "level": 1 },
+    { "reference": { "slug": "wizard-weapon-expertise", "source": "Player Core" }, "level": 7 },
+    { "reference": { "slug": "spellcasting-mod", "source": "Player Core" }, "level": 9 }
+  ],
+  "equipment": {
+    "weapons": [
+      { "reference": { "slug": "quarterstaff", "source": "Player Core" }, "quantity": 1 }
+    ],
+    "armor": [],
+    "inventory": [
+      { "reference": { "slug": "spellbook", "source": "Player Core" }, "quantity": 1 },
+      { "reference": { "slug": "scroll-of-fireball", "source": "Player Core" }, "quantity": 3 },
+      { "reference": { "slug": "healers-tools", "source": "Player Core" }, "quantity": 1 }
+    ]
+  },
+  "currencies": {
+    "gp": 150
+  },
+  "spellcasting": {
+    "entries": [
+      {
+        "tradition": "arcane",
+        "preparedness": "prepared",
+        "attribute": "int",
+        "slots": {
+          "1": 3,
+          "2": 3,
+          "3": 3,
+          "4": 3,
+          "5": 2
+        },
+        "spells": [
+          { "slug": "magic-missile", "source": "Player Core" },
+          { "slug": "shield", "source": "Player Core" },
+          { "slug": "detect-magic", "source": "Player Core" },
+          { "slug": "fireball", "source": "Player Core" },
+          { "slug": "lightning-bolt", "source": "Player Core" },
+          { "slug": "fly", "source": "Player Core" },
+          { "slug": "invisibility", "source": "Player Core" },
+          { "slug": "counterspell", "source": "Player Core" }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "reference": { "slug": "recall-knowledge", "source": "Player Core" },
+      "actionType": "single"
+    }
+  ],
+  "reactions": [
+    {
+      "reference": { "slug": "reactive-strike", "source": "Player Core" }
+    }
+  ],
+  "explorationActivities": [
+    {
+      "reference": { "slug": "detect-magic", "source": "Player Core" }
+    }
+  ],
+  "companions": [],
+  "familiars": [],
+  "drones": [],
+  "vehicles": [],
+  "notes": [
+    {
+      "title": "Spellbook Contents",
+      "body": "Contains all prepared spells plus contingency, telepathy, and wall of force."
+    }
+  ]
+}
