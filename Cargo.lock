@@ -510,6 +510,9 @@ name = "schema-pf2e"
 version = "0.1.0"
 dependencies = [
  "schema-core",
+ "schemars",
+ "semver",
+ "serde_json",
 ]
 
 [[package]]

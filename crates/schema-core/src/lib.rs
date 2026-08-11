@@ -35,6 +35,7 @@ pub mod character;
 pub mod extensions;
 pub mod hashing;
 pub mod newtypes;
+pub mod plugin;
 pub mod proficiency;
 pub mod refs;
 pub mod session;
@@ -46,6 +47,10 @@ pub use character::{Character, CharacterBuild, CharacterMeta};
 pub use extensions::{ExtensionBag, Namespace};
 pub use hashing::content_hash;
 pub use newtypes::{AdapterId, ContentHash, FieldPath, Level, PlatformId, SkillKey, SlotKey, Ulid};
+pub use plugin::{
+    proficiency_or_untrained, ContentEntry, ContentIndex, ContentKind, DerivedStats, SystemPlugin,
+    SystemPluginRegistry, ValidationError, ValidationReport, ValidationWarning,
+};
 pub use proficiency::{ProficiencyRank, ProficiencyTable};
 pub use refs::{Slug, SystemRefId};
 pub use session::SessionState;

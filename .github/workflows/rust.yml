@@ -13,7 +13,7 @@ jobs:
     name: test + lint + boundary
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -44,14 +44,15 @@ jobs:
     name: codegen staleness (§3.6)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
       - run: corepack enable
-      - uses: actions/setup-node@v4
+      - run: corepack prepare pnpm@11.21.0 --activate
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: pnpm

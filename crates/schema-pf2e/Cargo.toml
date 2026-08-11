@@ -9,3 +9,6 @@ description = "PF2e SystemPlugin — defines valid PF2e characters and derived s
 
 [dependencies]
 schema-core.workspace = true
+schemars.workspace = true
+serde_json.workspace = true
+semver.workspace = true
