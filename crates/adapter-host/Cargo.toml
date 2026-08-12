@@ -5,7 +5,22 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Embeds a JS runtime (deno_core) to run TS adapters in-process, sandboxed, with capability enforcement and boundary validation (§5.5)."
+description = "Embeds deno_core to run TS adapters in-process, sandboxed, with capability enforcement and boundary validation (§5.5)."
 
 [dependencies]
 schema-core.workspace = true
+deno_core.workspace = true
+deno_error.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+tracing.workspace = true
+url.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+schema-core.workspace = true
+tokio.workspace = true
+serde_json.workspace = true

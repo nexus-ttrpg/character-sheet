@@ -49,6 +49,14 @@ secrecy = "0.10"
 aes-gcm = "0.10"
 ulid = "1"
 
+# Adapter host (§5.5)
+deno_core = "0.410"
+deno_error = "0.7.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "process", "io-util", "sync"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+tracing = "0.1"
+url = "2"
+
 [profile.release]
 opt-level = 3
 lto = "thin"

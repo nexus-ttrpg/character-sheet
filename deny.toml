@@ -5,7 +5,12 @@
 # Warn on advisories, fail CI only on high/critical for now.
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "warn"
-ignore = []
+ignore = [
+    # bincode 1.x is unmaintained; transitive dep of deno_core. No safe upgrade.
+    "RUSTSEC-2025-0141",
+    # paste is no longer maintained; transitive dep of deno_core (v8 macro).
+    "RUSTSEC-2024-0436",
+]
 
 [licenses]
 # Allow common permissive licenses; review on first real dependency addition.
@@ -19,6 +24,8 @@ allow = [
     "Unicode-DFS-2016",
     "Unicode-3.0",
     "Zlib",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
 ]
 confidence-threshold = 0.8
 

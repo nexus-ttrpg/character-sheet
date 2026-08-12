@@ -41,7 +41,7 @@ pub mod refs;
 pub mod session;
 pub mod testing;
 
-pub use ability::AbilityScoreKey;
+pub use ability::{AbilityScoreKey, AbilityScoreMap};
 pub use build_types::*;
 pub use character::{Character, CharacterBuild, CharacterMeta};
 pub use extensions::{ExtensionBag, Namespace};
