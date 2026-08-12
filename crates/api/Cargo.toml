@@ -5,10 +5,36 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Axum API — REST over GraphQL, OpenAPI via utoipa (§13). CRUD, connections, push/pull/diff, webhooks, auth."
+description = "Axum API — REST, OpenAPI via utoipa (§13). CRUD, connections, push/pull/diff, webhooks, auth."
 
 [dependencies]
 schema-core.workspace = true
 sync-engine.workspace = true
-store.workspace = true
+store = { workspace = true, features = ["postgres", "sqlite"] }
 adapter-host.workspace = true
+
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+utoipa.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+subtle.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+hex.workspace = true
+semver.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+secrecy.workspace = true
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tempfile = "3"
+sqlx = { workspace = true, features = ["sqlite"] }
+tower = { workspace = true, features = ["util"] }
+http = "1"
