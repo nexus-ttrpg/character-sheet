@@ -15,11 +15,16 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "bundle": "esbuild src/bundle.ts --bundle --format=esm --target=es2022 --outfile=dist/bundle/bundle.js",
     "test": "vitest run"
   },
   "dependencies": {
     "@nexus-sheet/adapter-sdk": "workspace:*",
     "@nexus-sheet/foundry-mapping": "workspace:*",
     "@nexus-sheet/schema-types": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0",
+    "tsup": "^8.3.0"
   }
 }

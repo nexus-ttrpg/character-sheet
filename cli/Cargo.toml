@@ -12,3 +12,21 @@ name = "nexus"
 path = "src/main.rs"
 
 [dependencies]
+schema-core.workspace = true
+sync-engine.workspace = true
+store = { workspace = true, features = ["sqlite"] }
+adapter-host.workspace = true
+sqlx = { workspace = true, features = ["sqlite"] }
+clap = { version = "4", features = ["derive"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+semver = { workspace = true }
+anyhow = "1"
+hex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = "0.3"
+
+[dev-dependencies]
+tempfile = "3"
