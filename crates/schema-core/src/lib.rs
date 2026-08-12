@@ -46,7 +46,9 @@ pub use build_types::*;
 pub use character::{Character, CharacterBuild, CharacterMeta};
 pub use extensions::{ExtensionBag, Namespace};
 pub use hashing::content_hash;
-pub use newtypes::{AdapterId, ContentHash, FieldPath, Level, PlatformId, SkillKey, SlotKey, Ulid};
+pub use newtypes::{
+    AdapterId, ContentHash, FieldPath, Level, PlatformId, SkillKey, SlotKey, SystemId, Ulid,
+};
 pub use plugin::{
     proficiency_or_untrained, ContentEntry, ContentIndex, ContentKind, DerivedStats, SystemPlugin,
     SystemPluginRegistry, ValidationError, ValidationReport, ValidationWarning,

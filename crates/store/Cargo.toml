@@ -10,3 +10,30 @@ description = "SQLx store — snapshot DAG, content hashes, connections. One cod
 [dependencies]
 schema-core.workspace = true
 sync-engine.workspace = true
+sqlx.workspace = true
+async-trait.workspace = true
+secrecy.workspace = true
+aes-gcm.workspace = true
+ulid.workspace = true
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
+semver = { workspace = true }
+
+[features]
+default = []
+# Feature-gated drivers (implementation-plan 0.6): the CLI compiles with
+# `sqlite`, the API server with `postgres`. Both can be enabled simultaneously
+# for the test suite. At least one is required — enforced at compile time.
+postgres = ["sqlx/postgres"]
+sqlite = ["sqlx/sqlite"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tempfile = "3"
+schema-core.workspace = true
+sync-engine.workspace = true
+secrecy.workspace = true
+chrono.workspace = true
