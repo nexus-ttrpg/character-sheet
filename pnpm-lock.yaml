@@ -21,6 +21,18 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vite@8.2.1)
 
+  adapters/foundry:
+    dependencies:
+      '@nexus-sheet/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../packages/adapter-sdk
+      '@nexus-sheet/foundry-mapping':
+        specifier: workspace:*
+        version: link:../../packages/foundry-mapping
+      '@nexus-sheet/schema-types':
+        specifier: workspace:*
+        version: link:../../packages/schema-types
+
   packages/adapter-sdk:
     dependencies:
       '@nexus-sheet/schema-types':
@@ -31,7 +43,11 @@ importers:
         specifier: workspace:*
         version: link:../schema-zod
 
-  packages/foundry-mapping: {}
+  packages/foundry-mapping:
+    dependencies:
+      '@nexus-sheet/schema-types':
+        specifier: workspace:*
+        version: link:../schema-types
 
   packages/schema-types: {}
 

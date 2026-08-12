@@ -1,0 +1,25 @@
+{
+  "name": "@nexus-sheet/foundry-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Foundry reference adapter — the adapter every later adapter is modeled on (§7, §19). Consumes foundry-mapping for the actual Actor↔canonical logic.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nexus-sheet/adapter-sdk": "workspace:*",
+    "@nexus-sheet/foundry-mapping": "workspace:*",
+    "@nexus-sheet/schema-types": "workspace:*"
+  }
+}
