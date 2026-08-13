@@ -15,7 +15,9 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "typecheck:relay": "tsc -p module/tsconfig.json",
     "bundle": "esbuild src/bundle.ts --bundle --format=esm --target=es2022 --outfile=dist/bundle/bundle.js",
+    "bundle:relay": "esbuild module/relay-bundle.ts --bundle --format=esm --target=es2022 --outfile=module/nexus-sheet-relay.js",
     "test": "vitest run"
   },
   "dependencies": {

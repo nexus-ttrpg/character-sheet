@@ -6,11 +6,12 @@ and the merge engine are the asset.
 
 **Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter
 boundary — GO decision in [ADR 0001](./docs/adr/0001-phase1-go-no-go-rust-ts-split.md)),
-Phase 2.1 (Axum API), Phase 2.2 (Roll20 adapter), and Phase 2.4 (SF2e system
-plugin + Foundry SF2e coverage) are complete. 238 tests passing (132 Rust +
-106 TS). See [`implementation-plan.md`](./implementation-plan.md) for the phased
-build plan and [`cross-vtt-sync-architecture.md`](./cross-vtt-sync-architecture.md)
-for the full design (~1090 lines).
+Phase 2.1 (Axum API), Phase 2.2 (Roll20 adapter), Phase 2.3 (Foundry relay
+module), and Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) are
+complete. 288 tests passing (132 Rust + 156 TS). See
+[`implementation-plan.md`](./implementation-plan.md) for the phased build plan
+and [`cross-vtt-sync-architecture.md`](./cross-vtt-sync-architecture.md) for
+the full design (~1090 lines).
 
 ## What's built
 
@@ -26,7 +27,7 @@ for the full design (~1090 lines).
 | `cli/` | ✅ Complete | 6 | `nexus import\|push\|diff\|history` — single static binary |
 | `packages/adapter-sdk` | ✅ Complete | 19 | `CharacterAdapter` interface, contract test harness |
 | `packages/foundry-mapping` | ✅ Complete | — | PF2e/SF2e Actor ↔ canonical mapping logic (drones, vehicles, credits/UPB) |
-| `adapters/foundry` | ✅ Complete | 39 | Reference adapter (identity through spellcasting; SF2e drones/vehicles) |
+| `adapters/foundry` | ✅ Complete | 89 | Reference adapter (39) + relay module (50): in-browser Actor↔canonical via shared `foundry-mapping` (§7.1) |
 | `adapters/roll20` | ✅ Complete | 48 | Second adapter — flat attrs, repeating sections, asleep sandbox (§6) |
 | `packages/schema-types` | ✅ Generated | — | TS types from `canonical.schema.json` |
 | `packages/schema-zod` | ✅ Generated | — | Zod schemas from `canonical.schema.json` |
@@ -49,7 +50,7 @@ crates/        Rust core: schema-core (source of truth), schema-pf2e, schema-sf2
                sync-engine (pure, no I/O), store, adapter-host, api
 packages/      TS shared: schema-types + schema-zod (GENERATED), adapter-sdk,
                foundry-mapping
-adapters/      TS, contributed: foundry (reference), roll20 (second adapter)
+adapters/      TS, contributed: foundry (reference adapter + relay module), roll20
 cli/           `nexus` — Rust, clap, single static binary
 xtask/         cargo xtask codegen | openapi | fixtures
 examples/      fixtures/ (shared JSON ground-truth), example-adapter/ (Phase 3)
@@ -75,8 +76,8 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 
 ```
 pnpm install                            # install all workspace deps
-pnpm test                               # all packages + adapters (106 tests)
-pnpm test --filter @nexus-sheet/foundry # Foundry adapter (39 tests)
+pnpm test                               # all packages + adapters (156 tests)
+pnpm test --filter @nexus-sheet/foundry # Foundry adapter + relay module (89 tests)
 pnpm test --filter @nexus-sheet/roll20  # Roll20 adapter (48 tests)
 pnpm test --filter @nexus-sheet/adapter-sdk  # SDK + contract harness (19 tests)
 ```

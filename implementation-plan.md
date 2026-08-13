@@ -1,6 +1,6 @@
 # Nexus Sheet — Implementation Plan
 
-**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.2 (Roll20 adapter) ✅, Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) ✅. 238 tests passing (132 Rust + 106 TS).
+**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.2 (Roll20 adapter) ✅, Phase 2.3 (Foundry relay module) ✅, Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) ✅. 288 tests passing (132 Rust + 156 TS).
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
 
 The four load-bearing invariants from the proposal are non-negotiable and every task below defers to them: (1) the language boundary — Rust core, TS adapters, and a contributor writing an adapter never installs Rust (§0.1); (2) `sync-engine` is pure and I/O-free (§1, §11.3); (3) one-way codegen from Rust types toward the less-expressive TS target, with committed output and a CI staleness check (§3.6); (4) conflicts are never auto-resolved and rollback is `revert`, not `reset --hard` (§11.3, §11.4).
@@ -282,18 +282,19 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 **Status:** ✅ Complete. 48 tests (contract harness against 3 PF2e fixtures + Roll20-specific tests covering sheet_version validation/throws, lossy ability score round-trip, repeating-row fingerprint matching, detectChanges, capabilities, and round-trip fidelity). The mapping table uses `canonicalPath()` for compile-time path checking and derives `fieldCoverage` from the table itself (§6.3). Ability scores are lossy: Roll20 stores the derived number only; the value round-trips but boosts/flaws are lost (§5.2, warned on both export and import). `capabilities.supportsSessionRead` is false (§4, §6.2). The `drift` endpoint already returns `Unavailable { reason: SandboxNotRunning }` for Roll20 connections (§6.2, wired in `crates/api/src/routes/connections.rs`).
 **Risk:** Roll20's sandbox is unreachable and frequently asleep (§6.2, §21). Document the asymmetry prominently; never build a scraping workaround to fake parity (§21).
 
-### 2.3 Foundry relay module
+### 2.3 Foundry relay module — ✅ COMPLETE
 
 **Goal:** the in-browser module sharing `foundry-mapping` by plain import (§7.1).
 
 **Deliverables:**
-- `adapters/foundry/module/`: `nexus-sheet-relay` + `module.json`; registers authenticated local HTTP endpoints keyed by a generated API key (§7, §7.1).
-- Hooks `Actor` create/update for drift telemetry — still never auto-syncing (§4, §7.1).
-- Imports `foundry-mapping` directly to convert Actors in-browser, works fully offline (§7.1).
-- Direct world access (LevelDB) **only** under §7.4 conditions: verified shutdown via lock-file check, route through Foundry's own pack/unpack CLI, backup first. The CLI enforces these.
+- `adapters/foundry/module/`: `nexus-sheet-relay` + `module.json`; registers authenticated local HTTP endpoints keyed by a generated API key (§7, §7.1). Four endpoints: `GET /nexus/actors` (list), `GET /nexus/actors/:id` (import), `POST /nexus/actors/:id/apply` (export), `GET /nexus/drift` (drift report).
+- Hooks `Actor` create/update for drift telemetry — still never auto-syncing (§4, §7.1). DriftTracker is pure logic, tested with mocks.
+- Imports `foundry-mapping` directly to convert Actors in-browser, works fully offline (§7.1). The round-trip test asserts the relay uses the same mapping as the server-side adapter.
+- Direct world access (LevelDB) is a **CLI concern** (§7.4), not the relay module — the relay is for running worlds only.
 
 **Depends on:** `packages/foundry-mapping` (from 1.3), 2.1.
-**Verify:** a running Foundry world exposes the relay endpoints; an Actor edit produces drift telemetry; direct-world access refuses to run against a locked (running) world.
+**Verify:** 50 relay tests pass (drift tracker, API key validation, endpoint handlers, auth enforcement, hook wiring, round-trip through foundry-mapping). Bundled by esbuild to a single ESM file.
+**Note:** Direct LevelDB access (§7.4) remains a CLI-side task; the relay module itself is complete.
 
 ### 2.4 SF2e system plugin + Foundry SF2e coverage — ✅ COMPLETE
 

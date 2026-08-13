@@ -10,6 +10,9 @@ pnpm-debug.log*
 dist/
 *.tsbuildinfo
 
+# Relay module bundle (build artifact — built by `pnpm bundle:relay`)
+adapters/foundry/module/nexus-sheet-relay.js
+
 # Agent / editor tooling state (CLAUDE.md at root IS tracked; this is runtime state)
 .claude/
 

@@ -8,10 +8,11 @@ Guidance for AI agents (Claude Code, etc.) working in this repository.
 "Git for TTRPG characters": a canonical character model + diff/merge engine
 sitting between disposable platform adapters. Rust core, TypeScript adapters.
 
-**Status:** Phase 2 in progress. Phases 0, 1, and 2.1 are complete. 173 tests
-passing (125 Rust + 48 TS). See `CLAUDE.md` for full invariants and status,
-`implementation-plan.md` for the phased plan, `cross-vtt-sync-architecture.md`
-for the canonical design (§N references throughout the code).
+**Status:** Phase 2 in progress. Phases 0, 1, 2.1, 2.2, 2.3, and 2.4 are
+complete. 288 tests passing (132 Rust + 156 TS). See `CLAUDE.md` for full
+invariants and status, `implementation-plan.md` for the phased plan,
+`cross-vtt-sync-architecture.md` for the canonical design (§N references
+throughout the code).
 
 ## Commands to run
 
@@ -36,7 +37,7 @@ cargo test -p sync-engine          # merge engine + proptest laws
 cargo test -p api                  # API unit + integration tests
 cargo test -p adapter-host         # boundary (19) + unit (14) tests
 cargo test -p store                # store tests
-pnpm test --filter @nexus-sheet/foundry       # Foundry adapter (29 tests)
+pnpm test --filter @nexus-sheet/foundry       # Foundry adapter + relay module (89 tests)
 pnpm test --filter @nexus-sheet/adapter-sdk   # SDK + contract harness (19)
 ```
 
@@ -93,7 +94,9 @@ packages/       TS shared (generated + SDK)
   adapter-sdk/    CharacterAdapter interface, contract test harness
   foundry-mapping/  PF2e Actor ↔ canonical mapping logic
 adapters/       TS, contributed (disposable)
-  foundry/        Reference adapter (29 tests)
+  foundry/        Reference adapter + relay module (89 tests)
+                  src/       — server-side adapter (adapter-host)
+                  module/    — in-browser relay (§7.1: shares foundry-mapping by plain import)
 cli/            `nexus` — Rust, clap, single static binary
 xtask/          cargo xtask codegen | openapi | fixtures
 examples/       fixtures/ (shared JSON ground-truth), example-adapter/
