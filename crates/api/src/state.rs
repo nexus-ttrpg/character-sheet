@@ -3,14 +3,14 @@
 //! `AppState` is the `Clone`-able handle Axum handlers receive via
 //! `State<AppState>`. It holds an `Arc<dyn Store>` (backend-agnostic), the
 //! adapter bundle directory, the at-rest encryption key for connection
-//! credentials (§17), and an in-memory webhook registry.
+//! credentials (§17), an in-memory webhook registry, and a TTL API key cache.
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use store::{EncryptionKey, Store};
 
-use crate::auth::{ApiKeyRegistry, RateLimiter};
+use crate::auth::{ApiKeyCache, RateLimiter};
 
 /// Shared state injected into every Axum handler via `State<AppState>`.
 ///
@@ -31,9 +31,9 @@ pub struct AppState {
     /// deployment would persist these and sign payloads from a shared secret.
     pub webhooks: Arc<tokio::sync::RwLock<WebhookRegistry>>,
 
-    /// API key registry (§13.1). In-memory for Phase 2; will move to the
-    /// store with Argon2 hashing when keys are persisted (§17).
-    pub api_keys: Arc<tokio::sync::RwLock<ApiKeyRegistry>>,
+    /// API key cache (§13.1, §17). TTL-cached Argon2 validation results,
+    /// backed by the store's `api_keys` table.
+    pub api_key_cache: Arc<ApiKeyCache>,
 
     /// Per-key rate limiter (§17). In-memory token bucket; multi-instance
     /// hosted would use Redis.
@@ -51,24 +51,7 @@ impl AppState {
             adapters_dir,
             encryption_key: Arc::new(encryption_key),
             webhooks: Arc::new(tokio::sync::RwLock::new(WebhookRegistry::new())),
-            api_keys: Arc::new(tokio::sync::RwLock::new(ApiKeyRegistry::new())),
-            rate_limiter: Arc::new(RateLimiter::new()),
-        }
-    }
-
-    /// Like `new`, but with a pre-seeded API key registry (for tests/dev).
-    pub fn with_api_keys(
-        store: Arc<dyn Store>,
-        adapters_dir: PathBuf,
-        encryption_key: EncryptionKey,
-        api_keys: ApiKeyRegistry,
-    ) -> Self {
-        Self {
-            store,
-            adapters_dir,
-            encryption_key: Arc::new(encryption_key),
-            webhooks: Arc::new(tokio::sync::RwLock::new(WebhookRegistry::new())),
-            api_keys: Arc::new(tokio::sync::RwLock::new(api_keys)),
+            api_key_cache: Arc::new(ApiKeyCache::new()),
             rate_limiter: Arc::new(RateLimiter::new()),
         }
     }

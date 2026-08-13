@@ -77,21 +77,22 @@ async fn postgres_api_round_trip() {
     store.migrate().await.expect("migrate");
 
     // Bootstrap an Admin API key.
-    let mut registry = api::auth::ApiKeyRegistry::new();
     let owner = store::new_ulid();
-    registry.bootstrap(
+    api::auth::seed_api_key(
+        &store,
         "nsk_live_pg_test_key",
         owner,
         api::auth::KeyScope::Admin,
         "pg-test",
-    );
+    )
+    .await
+    .expect("seed api key");
 
     let encryption_key = EncryptionKey::generate();
-    let state = api::state::AppState::with_api_keys(
+    let state = api::state::AppState::new(
         Arc::new(store),
         std::path::PathBuf::from("/tmp/nexus-adapters"),
         encryption_key,
-        registry,
     );
     let router = app(state);
     let auth = "nsk_live_pg_test_key";

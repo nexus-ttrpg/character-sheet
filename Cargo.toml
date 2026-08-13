@@ -70,6 +70,7 @@ utoipa = { version = "5", features = ["chrono"] }
 hmac = "0.12"
 sha2 = "0.10"
 subtle = "2"
+argon2 = "0.5"
 
 [profile.release]
 opt-level = 3

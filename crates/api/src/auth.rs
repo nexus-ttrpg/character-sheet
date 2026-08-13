@@ -7,10 +7,11 @@
 //! interactive OAuth flows (§17). Keys are scoped (`ReadOnly`, `Sync`,
 //! `Admin`), and characters belong to the key's owner.
 //!
-//! Phase 2 uses an in-memory key registry (like the webhook registry); when
-//! keys move to the store they'll be Argon2-hashed in the database (§17).
-//! For now, keys are SHA-256-hashed and compared in constant time via
-//! `subtle` (already a dependency for webhook HMAC verification).
+//! Keys are persisted in the store's `api_keys` table, Argon2-hashed (PHC
+//! format). The plaintext is shown only at creation time and never
+//! retrievable after (§17). A TTL cache sits in front of the store to avoid
+//! Argon2-verifying every key on every request — Argon2 verification is
+//! expensive (~50ms per key), so the cache is essential for performance.
 //!
 //! ## Rate limiting (§17)
 //!
@@ -20,7 +21,12 @@
 //! an in-memory `HashMap`, consistent with the webhook registry approach.
 
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
+};
 use axum::extract::State;
 use axum::http::{Method, Request, StatusCode};
 use axum::middleware::Next;
@@ -28,9 +34,9 @@ use axum::response::{IntoResponse, Response};
 use chrono::{DateTime, Utc};
 use schema_core::Ulid;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-use subtle::ConstantTimeEq;
 use utoipa::ToSchema;
+
+use store::Store;
 
 use crate::state::AppState;
 
@@ -58,6 +64,28 @@ impl KeyScope {
             KeyScope::Admin => true,
         }
     }
+
+    /// String representation for storage (matches `serde rename_all`).
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            KeyScope::ReadOnly => "read_only",
+            KeyScope::Sync => "sync",
+            KeyScope::Admin => "admin",
+        }
+    }
+}
+
+impl std::str::FromStr for KeyScope {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "read_only" => Ok(KeyScope::ReadOnly),
+            "sync" => Ok(KeyScope::Sync),
+            "admin" => Ok(KeyScope::Admin),
+            _ => Err(format!("unknown scope: {s}")),
+        }
+    }
 }
 
 // ── Auth principal ───────────────────────────────────────────────────────────
@@ -71,18 +99,7 @@ pub struct AuthPrincipal {
     pub key_id: Ulid,
 }
 
-// ── API key registry (in-memory, §13.1) ──────────────────────────────────────
-
-/// A stored API key (hash only — the plaintext is never retained, §17).
-#[derive(Debug, Clone)]
-struct StoredKey {
-    id: Ulid,
-    owner_id: Ulid,
-    key_hash: [u8; 32],
-    scope: KeyScope,
-    label: String,
-    created_at: DateTime<Utc>,
-}
+// ── Key metadata DTOs ────────────────────────────────────────────────────────
 
 /// Key metadata returned by the list endpoint (no hash, §17).
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -103,122 +120,80 @@ pub struct GeneratedKey {
     pub label: String,
 }
 
-/// In-memory API key registry (Phase 2; will move to the Store trait later).
-///
-/// Thread-safe via `RwLock` — reads (validation) are concurrent, writes (key
-/// creation/revocation) are exclusive.
-#[derive(Debug, Default)]
-pub struct ApiKeyRegistry {
-    keys: Vec<StoredKey>,
+// ── API key cache (TTL, store-backed, §17) ───────────────────────────────────
+
+/// TTL for cached validated tokens (§17).
+const CACHE_TTL: Duration = Duration::from_secs(60);
+
+struct CacheEntry {
+    principal: AuthPrincipal,
+    expires_at: Instant,
 }
 
-impl ApiKeyRegistry {
+/// In-memory TTL cache for API key validation (§17).
+///
+/// Argon2 verification is expensive (~50ms per key). To avoid verifying
+/// every key on every request, validated tokens are cached with a TTL. On
+/// cache miss, the store is queried for all key hashes and each is
+/// Argon2-verified against the token. The cache is invalidated on key
+/// creation/revocation.
+#[derive(Default)]
+pub struct ApiKeyCache {
+    cache: tokio::sync::RwLock<HashMap<String, CacheEntry>>,
+}
+
+impl ApiKeyCache {
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Generate a new API key, store its hash, and return the plaintext (§17).
+    /// Validate a plaintext token: check cache first, then query the store.
     ///
-    /// The plaintext is shown only here — it is never retrievable after.
-    pub fn create(&mut self, owner_id: Ulid, scope: KeyScope, label: String) -> GeneratedKey {
-        let id = store::new_ulid();
-        let key = generate_key();
-        let key_hash = hash_key(&key);
-        let label_clone = label.clone();
-
-        self.keys.push(StoredKey {
-            id: id.clone(),
-            owner_id,
-            key_hash,
-            scope,
-            label,
-            created_at: Utc::now(),
-        });
-
-        GeneratedKey {
-            id,
-            key,
-            scope,
-            label: label_clone,
+    /// On cache hit (token found and not expired): returns the principal
+    /// immediately. On cache miss: queries the store for all API key records,
+    /// Argon2-verifies each against the token, and caches the match.
+    pub async fn validate(&self, token: &str, store: &dyn Store) -> Option<AuthPrincipal> {
+        // Fast path: check cache.
+        {
+            let cache = self.cache.read().await;
+            if let Some(entry) = cache.get(token) {
+                if entry.expires_at > Instant::now() {
+                    return Some(entry.principal.clone());
+                }
+            }
         }
+
+        // Cache miss: query the store, Argon2-verify each key.
+        let records = store.list_api_keys().await.ok()?;
+        for record in records {
+            if verify_key(token, &record.key_hash) {
+                let scope = record.scope.parse().ok()?;
+                let principal = AuthPrincipal {
+                    owner_id: record.owner_id,
+                    scope,
+                    key_id: record.id,
+                };
+                let mut cache = self.cache.write().await;
+                cache.insert(
+                    token.to_string(),
+                    CacheEntry {
+                        principal: principal.clone(),
+                        expires_at: Instant::now() + CACHE_TTL,
+                    },
+                );
+                return Some(principal);
+            }
+        }
+        None
     }
 
-    /// Validate a plaintext key against stored hashes (constant-time, §17).
-    ///
-    /// Returns the principal if the key is valid.
-    pub fn validate(&self, key: &str) -> Option<AuthPrincipal> {
-        let hash = hash_key(key);
-        self.keys
-            .iter()
-            .find(|k| k.key_hash.ct_eq(&hash).into())
-            .map(|k| AuthPrincipal {
-                owner_id: k.owner_id.clone(),
-                scope: k.scope,
-                key_id: k.id.clone(),
-            })
-    }
-
-    /// List all keys (metadata only, no hashes — §17).
-    pub fn list(&self) -> Vec<KeyInfo> {
-        self.keys
-            .iter()
-            .map(|k| KeyInfo {
-                id: k.id.to_string(),
-                owner_id: k.owner_id.to_string(),
-                scope: k.scope,
-                label: k.label.clone(),
-                created_at: k.created_at,
-            })
-            .collect()
-    }
-
-    /// Revoke a key by id. Returns true if a key was removed.
-    pub fn revoke(&mut self, id: &str) -> bool {
-        let before = self.keys.len();
-        self.keys.retain(|k| k.id.as_str() != id);
-        self.keys.len() < before
-    }
-
-    /// Insert a pre-existing plaintext key (e.g. from `NEXUS_ADMIN_API_KEY`).
-    /// The key is hashed before storage — the plaintext is never retained (§17).
-    pub fn insert_plaintext(
-        &mut self,
-        key: String,
-        owner_id: Ulid,
-        scope: KeyScope,
-        label: String,
-    ) {
-        self.keys.push(StoredKey {
-            id: store::new_ulid(),
-            owner_id,
-            key_hash: hash_key(&key),
-            scope,
-            label,
-            created_at: Utc::now(),
-        });
-    }
-
-    /// Whether no keys exist yet (bootstrap mode, §13.1).
-    pub fn is_empty(&self) -> bool {
-        self.keys.is_empty()
-    }
-
-    /// Pre-seed a known key for tests/dev (bypasses generation).
-    pub fn bootstrap(&mut self, key: &str, owner_id: Ulid, scope: KeyScope, label: &str) -> Ulid {
-        let id = store::new_ulid();
-        self.keys.push(StoredKey {
-            id: id.clone(),
-            owner_id,
-            key_hash: hash_key(key),
-            scope,
-            label: label.to_string(),
-            created_at: Utc::now(),
-        });
-        id
+    /// Invalidate the entire cache (after key creation/revocation).
+    pub async fn invalidate_all(&self) {
+        self.cache.write().await.clear();
     }
 }
 
-// ── Key generation + hashing ─────────────────────────────────────────────────
+// ── Key generation + Argon2 hashing ──────────────────────────────────────────
 
 /// Generate a random API key: `nsk_live_` + 32 hex chars (§13.1, §17).
 ///
@@ -242,14 +217,53 @@ fn rand_bytes() -> [u8; 16] {
     buf
 }
 
-/// SHA-256 hash of a key (constant-time comparison via `subtle`, §17).
-fn hash_key(key: &str) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(key.as_bytes());
-    let result = hasher.finalize();
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&result);
-    out
+/// Argon2id hash of a plaintext key, returned as a PHC-format string (§17).
+///
+/// Argon2id is the recommended variant (OWASP, RFC 9106). The default
+/// parameters from the `argon2` crate are used (m=19456 KiB, t=2, p=1).
+/// A random salt is generated for each hash, so the same plaintext produces
+/// different hashes — this is by design.
+pub fn hash_key(plaintext: &str) -> String {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let hash = argon2
+        .hash_password(plaintext.as_bytes(), &salt)
+        .expect("Argon2 hashing should not fail with valid input");
+    hash.to_string()
+}
+
+/// Verify a plaintext key against an Argon2 PHC-format hash (§17).
+pub fn verify_key(plaintext: &str, phc_hash: &str) -> bool {
+    let parsed = match PasswordHash::new(phc_hash) {
+        Ok(h) => h,
+        Err(_) => return false,
+    };
+    Argon2::default()
+        .verify_password(plaintext.as_bytes(), &parsed)
+        .is_ok()
+}
+
+/// Hash a plaintext key and store it. Used by main.rs for
+/// `NEXUS_ADMIN_API_KEY` bootstrap and by tests to seed known keys.
+pub async fn seed_api_key(
+    store: &dyn Store,
+    plaintext: &str,
+    owner_id: Ulid,
+    scope: KeyScope,
+    label: &str,
+) -> Result<Ulid, store::StoreError> {
+    let id = store::new_ulid();
+    store
+        .put_api_key(&store::ApiKeyRecord {
+            id: id.clone(),
+            owner_id,
+            key_hash: hash_key(plaintext),
+            scope: scope.as_str().to_string(),
+            label: label.to_string(),
+            created_at: Utc::now(),
+        })
+        .await?;
+    Ok(id)
 }
 
 // ── Auth middleware (§13.1) ──────────────────────────────────────────────────
@@ -271,13 +285,10 @@ pub async fn auth_middleware(
         return next.run(req).await;
     }
 
-    // Public: first key creation when registry is empty (bootstrap, §13.1).
-    // Check is_empty() then drop the read lock BEFORE calling next.run() —
-    // the handler will acquire a write lock, which would deadlock if we held
-    // the read lock.
+    // Public: first key creation when the store has no keys (bootstrap, §13.1).
     if path == "/v1/api-keys" && method == Method::POST {
-        let is_bootstrap = state.api_keys.read().await.is_empty();
-        if is_bootstrap {
+        let count = state.store.api_key_count().await.unwrap_or(1);
+        if count == 0 {
             return next.run(req).await;
         }
     }
@@ -292,10 +303,10 @@ pub async fn auth_middleware(
         return unauthorized("missing or invalid Authorization header");
     };
 
-    let principal = {
-        let registry = state.api_keys.read().await;
-        registry.validate(&token)
-    };
+    let principal = state
+        .api_key_cache
+        .validate(&token, state.store.as_ref())
+        .await;
 
     let Some(principal) = principal else {
         return unauthorized("invalid API key");
@@ -474,74 +485,42 @@ mod tests {
     }
 
     #[test]
-    fn hash_key_deterministic() {
-        assert_eq!(hash_key("nsk_live_test"), hash_key("nsk_live_test"));
+    fn hash_and_verify_key() {
+        let key = "nsk_live_test_key_123";
+        let hash = hash_key(key);
+        assert!(verify_key(key, &hash));
     }
 
     #[test]
-    fn hash_key_differs() {
-        assert_ne!(hash_key("nsk_live_a"), hash_key("nsk_live_b"));
+    fn verify_rejects_wrong_key() {
+        let hash = hash_key("nsk_live_correct");
+        assert!(!verify_key("nsk_live_wrong", &hash));
     }
 
     #[test]
-    fn registry_create_and_validate() {
-        let mut reg = ApiKeyRegistry::new();
-        let owner = store::new_ulid();
-        let gen = reg.create(owner.clone(), KeyScope::Admin, "test".into());
-
-        let principal = reg.validate(&gen.key).expect("key should validate");
-        assert_eq!(principal.owner_id, owner);
-        assert_eq!(principal.scope, KeyScope::Admin);
-        assert_eq!(principal.key_id, gen.id);
+    fn hash_is_non_deterministic_due_to_salt() {
+        // Argon2 uses a random salt → same input produces different hashes.
+        let a = hash_key("nsk_live_same");
+        let b = hash_key("nsk_live_same");
+        assert_ne!(a, b);
+        // But both verify against the same plaintext.
+        assert!(verify_key("nsk_live_same", &a));
+        assert!(verify_key("nsk_live_same", &b));
     }
 
     #[test]
-    fn registry_rejects_unknown_key() {
-        let reg = ApiKeyRegistry::new();
-        assert!(reg.validate("nsk_live_unknown").is_none());
+    fn verify_rejects_malformed_hash() {
+        assert!(!verify_key("nsk_live_anything", "not-a-valid-phc-string"));
     }
 
     #[test]
-    fn registry_revoke() {
-        let mut reg = ApiKeyRegistry::new();
-        let owner = store::new_ulid();
-        let gen = reg.create(owner, KeyScope::Admin, "test".into());
-
-        assert!(reg.validate(&gen.key).is_some());
-        assert!(reg.revoke(gen.id.as_str()));
-        assert!(reg.validate(&gen.key).is_none());
-    }
-
-    #[test]
-    fn registry_list_excludes_hash() {
-        let mut reg = ApiKeyRegistry::new();
-        let owner = store::new_ulid();
-        reg.create(owner, KeyScope::Sync, "relay".into());
-
-        let list = reg.list();
-        assert_eq!(list.len(), 1);
-        // KeyInfo has no hash field.
-        let json = serde_json::to_string(&list[0]).unwrap();
-        assert!(!json.contains("hash"));
-    }
-
-    #[test]
-    fn registry_bootstrap() {
-        let mut reg = ApiKeyRegistry::new();
-        let owner = store::new_ulid();
-        let id = reg.bootstrap(
-            "nsk_live_bootstrapped",
-            owner.clone(),
-            KeyScope::Admin,
-            "bootstrap",
-        );
-
-        assert!(!reg.is_empty());
-        let principal = reg
-            .validate("nsk_live_bootstrapped")
-            .expect("bootstrap key");
-        assert_eq!(principal.key_id, id);
-        assert_eq!(principal.owner_id, owner);
+    fn scope_as_str_roundtrip() {
+        for scope in [KeyScope::ReadOnly, KeyScope::Sync, KeyScope::Admin] {
+            let s = scope.as_str();
+            let parsed: KeyScope = s.parse().unwrap();
+            assert_eq!(parsed, scope);
+        }
+        assert!("bogus".parse::<KeyScope>().is_err());
     }
 
     #[test]
@@ -603,5 +582,105 @@ mod tests {
 
         // key_b is unaffected.
         assert!(limiter.check(&key_b, false).await);
+    }
+
+    #[tokio::test]
+    async fn cache_validates_seeded_key() {
+        let store = store::SqliteStore::connect_in_memory().await.unwrap();
+        store.migrate().await.unwrap();
+
+        let owner = store::new_ulid();
+        seed_api_key(
+            &store,
+            "nsk_live_cache_test",
+            owner.clone(),
+            KeyScope::Admin,
+            "test",
+        )
+        .await
+        .unwrap();
+
+        let cache = ApiKeyCache::new();
+        let principal = cache
+            .validate("nsk_live_cache_test", &store)
+            .await
+            .expect("key should validate");
+        assert_eq!(principal.owner_id, owner);
+        assert_eq!(principal.scope, KeyScope::Admin);
+    }
+
+    #[tokio::test]
+    async fn cache_rejects_unknown_key() {
+        let store = store::SqliteStore::connect_in_memory().await.unwrap();
+        store.migrate().await.unwrap();
+
+        let cache = ApiKeyCache::new();
+        assert!(cache.validate("nsk_live_unknown", &store).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn cache_serves_from_memory_on_second_hit() {
+        let store = store::SqliteStore::connect_in_memory().await.unwrap();
+        store.migrate().await.unwrap();
+
+        let owner = store::new_ulid();
+        seed_api_key(
+            &store,
+            "nsk_live_cached",
+            owner.clone(),
+            KeyScope::Sync,
+            "test",
+        )
+        .await
+        .unwrap();
+
+        let cache = ApiKeyCache::new();
+
+        // First call: cache miss → queries store + Argon2 verify.
+        let p1 = cache
+            .validate("nsk_live_cached", &store)
+            .await
+            .expect("first validation");
+
+        // Second call: cache hit → no store query.
+        let p2 = cache
+            .validate("nsk_live_cached", &store)
+            .await
+            .expect("second validation (from cache)");
+
+        assert_eq!(p1.owner_id, p2.owner_id);
+        assert_eq!(p1.key_id, p2.key_id);
+    }
+
+    #[tokio::test]
+    async fn cache_invalidate_all_clears_entries() {
+        let store = store::SqliteStore::connect_in_memory().await.unwrap();
+        store.migrate().await.unwrap();
+
+        let owner = store::new_ulid();
+        seed_api_key(
+            &store,
+            "nsk_live_invalidate",
+            owner,
+            KeyScope::Admin,
+            "test",
+        )
+        .await
+        .unwrap();
+
+        let cache = ApiKeyCache::new();
+        cache
+            .validate("nsk_live_invalidate", &store)
+            .await
+            .expect("should validate");
+
+        cache.invalidate_all().await;
+
+        // After invalidation, the key still validates (re-queries store).
+        let principal = cache
+            .validate("nsk_live_invalidate", &store)
+            .await
+            .expect("should still validate after cache clear");
+        assert_eq!(principal.scope, KeyScope::Admin);
     }
 }

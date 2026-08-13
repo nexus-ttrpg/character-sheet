@@ -25,7 +25,7 @@ use anyhow::{Context, Result};
 use tracing::warn;
 use tracing_subscriber::EnvFilter;
 
-use api::auth::KeyScope;
+use api::auth::{hash_key, KeyScope};
 use api::state::AppState;
 use store::{EncryptionKey, PgStore, Store};
 
@@ -61,18 +61,23 @@ async fn main() -> Result<()> {
 
     let store: Arc<dyn Store> = Arc::new(store);
 
-    let state = AppState::new(store, adapters_dir, encryption_key);
+    let state = AppState::new(store.clone(), adapters_dir, encryption_key);
 
     if let Ok(admin_key) = std::env::var("NEXUS_ADMIN_API_KEY") {
         tracing::info!("seeding admin API key from NEXUS_ADMIN_API_KEY");
         let admin_owner = store::new_ulid();
-        let mut registry = state.api_keys.write().await;
-        registry.insert_plaintext(
-            admin_key,
-            admin_owner,
-            KeyScope::Admin,
-            "bootstrap admin".to_string(),
-        );
+        let key_id = store::new_ulid();
+        store
+            .put_api_key(&store::ApiKeyRecord {
+                id: key_id,
+                owner_id: admin_owner,
+                key_hash: hash_key(&admin_key),
+                scope: KeyScope::Admin.as_str().to_string(),
+                label: "bootstrap admin".to_string(),
+                created_at: chrono::Utc::now(),
+            })
+            .await
+            .context("failed to seed admin API key")?;
     }
 
     let app = api::app(state);

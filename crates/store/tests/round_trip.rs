@@ -12,7 +12,7 @@
 use chrono::Utc;
 use schema_core::{testing::minimal_build, CharacterMeta, ContentHash, SystemId, Ulid};
 use secrecy::{ExposeSecret, SecretString};
-use store::{ConnectionRecord, EncryptionKey, Page, Store};
+use store::{ApiKeyRecord, ConnectionRecord, EncryptionKey, Page, Store};
 use sync_engine::{Snapshot, SnapshotOrigin};
 
 // ── Shared test logic ───────────────────────────────────────────────────────
@@ -256,6 +256,89 @@ async fn run_suite(store: &dyn Store) {
     );
 }
 
+// ── API keys (§17) ───────────────────────────────────────────────────────────
+
+fn make_api_key(owner_id: &Ulid, scope: &str, label: &str) -> ApiKeyRecord {
+    ApiKeyRecord {
+        id: store::new_ulid(),
+        owner_id: owner_id.clone(),
+        key_hash: "$argon2id$fake_hash_for_testing".to_string(),
+        scope: scope.to_string(),
+        label: label.to_string(),
+        created_at: Utc::now(),
+    }
+}
+
+async fn run_api_key_suite(store: &dyn Store) {
+    store.migrate().await.expect("migrate");
+
+    // Empty store has 0 keys.
+    assert_eq!(
+        store.api_key_count().await.expect("count"),
+        0,
+        "fresh store should have 0 API keys"
+    );
+
+    let owner = store::new_ulid();
+
+    // Put two keys.
+    let key1 = make_api_key(&owner, "admin", "bootstrap");
+    let key2 = make_api_key(&owner, "sync", "relay");
+    store.put_api_key(&key1).await.expect("put_api_key 1");
+    store.put_api_key(&key2).await.expect("put_api_key 2");
+
+    // Count = 2.
+    assert_eq!(
+        store.api_key_count().await.expect("count"),
+        2,
+        "should have 2 API keys"
+    );
+
+    // List returns both, ULID-ordered.
+    let keys = store.list_api_keys().await.expect("list_api_keys");
+    assert_eq!(keys.len(), 2);
+    assert!(
+        keys[0].id.as_str() < keys[1].id.as_str(),
+        "should be ULID-ordered"
+    );
+    assert_eq!(keys[0].label, "bootstrap");
+    assert_eq!(keys[1].label, "relay");
+
+    // Revoke key1.
+    let revoked = store
+        .revoke_api_key(&key1.id)
+        .await
+        .expect("revoke_api_key");
+    assert!(revoked, "should report a row deleted");
+
+    // Count = 1.
+    assert_eq!(
+        store.api_key_count().await.expect("count after revoke"),
+        1,
+        "should have 1 API key after revocation"
+    );
+
+    // List returns only key2.
+    let keys = store.list_api_keys().await.expect("list after revoke");
+    assert_eq!(keys.len(), 1);
+    assert_eq!(keys[0].id, key2.id);
+
+    // Revoking a non-existent key returns false.
+    let revoked = store
+        .revoke_api_key(&key1.id)
+        .await
+        .expect("revoke non-existent");
+    assert!(!revoked, "should report no rows deleted");
+
+    // Idempotent put: re-inserting the same id is a no-op.
+    store.put_api_key(&key2).await.expect("idempotent put");
+    assert_eq!(
+        store.api_key_count().await.expect("count after idempotent"),
+        1,
+        "idempotent put should not duplicate"
+    );
+}
+
 // ── SQLite ──────────────────────────────────────────────────────────────────
 
 #[cfg(feature = "sqlite")]
@@ -311,6 +394,15 @@ async fn sqlite_list_characters_pagination() {
     assert!(page2.next_cursor.is_none());
 }
 
+#[cfg(feature = "sqlite")]
+#[tokio::test]
+async fn sqlite_api_key_crud() {
+    let store = store::SqliteStore::connect_in_memory()
+        .await
+        .expect("connect");
+    run_api_key_suite(&store).await;
+}
+
 // ── Postgres (only when DATABASE_URL is set) ────────────────────────────────
 
 #[cfg(feature = "postgres")]
@@ -334,4 +426,27 @@ async fn postgres_round_trip() {
         .expect("drop tables");
 
     run_suite(&store).await;
+}
+
+#[cfg(feature = "postgres")]
+#[tokio::test]
+async fn postgres_api_key_crud() {
+    let database_url = match std::env::var("DATABASE_URL") {
+        Ok(url) => url,
+        Err(_) => {
+            eprintln!("skipping postgres_api_key_crud: DATABASE_URL not set");
+            return;
+        }
+    };
+    let store = store::PgStore::connect(&database_url)
+        .await
+        .expect("connect");
+
+    // Clean slate — drop the api_keys table so the test is deterministic.
+    sqlx::query("DROP TABLE IF EXISTS api_keys CASCADE")
+        .execute(store.pool())
+        .await
+        .expect("drop api_keys");
+
+    run_api_key_suite(&store).await;
 }

@@ -109,6 +109,20 @@ pub struct ConnectionRecord {
     pub updated_at: DateTime<Utc>,
 }
 
+/// A stored API key record (§17). The `key_hash` is an Argon2 PHC-format
+/// string — the plaintext key is never stored. `scope` is a string
+/// (`"read_only"`, `"sync"`, `"admin"`) so the store crate doesn't depend on
+/// the `api` crate's `KeyScope` enum.
+#[derive(Debug, Clone)]
+pub struct ApiKeyRecord {
+    pub id: Ulid,
+    pub owner_id: Ulid,
+    pub key_hash: String,
+    pub scope: String,
+    pub label: String,
+    pub created_at: DateTime<Utc>,
+}
+
 /// A page of cursor-paginated results (§18). `next_cursor` is `Some` when more
 /// rows may exist beyond the returned page; pass it as `cursor` on the next
 /// call. ULID ordering is the natural stable cursor.
@@ -225,6 +239,21 @@ pub trait Store: Send + Sync {
         connection_id: &Ulid,
         snapshot_id: &Ulid,
     ) -> Result<(), StoreError>;
+
+    // ── API keys (§17) ──────────────────────────────────────────────────────
+
+    /// Store an API key record. The `key_hash` is an Argon2 PHC string — the
+    /// plaintext is never stored (§17).
+    async fn put_api_key(&self, record: &ApiKeyRecord) -> Result<(), StoreError>;
+
+    /// List all API key records (hashes included — caller must not expose them).
+    async fn list_api_keys(&self) -> Result<Vec<ApiKeyRecord>, StoreError>;
+
+    /// Delete an API key by id. Returns `true` if a row was deleted.
+    async fn revoke_api_key(&self, id: &Ulid) -> Result<bool, StoreError>;
+
+    /// Count of API keys — used for bootstrap detection (§13.1).
+    async fn api_key_count(&self) -> Result<i64, StoreError>;
 }
 
 // ── Error ───────────────────────────────────────────────────────────────────

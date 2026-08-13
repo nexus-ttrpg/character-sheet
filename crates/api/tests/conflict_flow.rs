@@ -26,20 +26,21 @@ async fn setup() -> (
     let key = EncryptionKey::generate();
 
     // Bootstrap an Admin API key so the test can authenticate (§13.1).
-    let mut registry = api::auth::ApiKeyRegistry::new();
     let owner = store::new_ulid();
-    registry.bootstrap(
+    api::auth::seed_api_key(
+        &store,
         "nsk_live_test_admin_key",
         owner.clone(),
         api::auth::KeyScope::Admin,
         "test",
-    );
+    )
+    .await
+    .unwrap();
 
-    let state = api::state::AppState::with_api_keys(
+    let state = api::state::AppState::new(
         Arc::new(store),
         std::path::PathBuf::from("/tmp/nexus-adapters"),
         key,
-        registry,
     );
     let router = app(state);
 

@@ -20,8 +20,8 @@ use sync_engine::Snapshot;
 
 use crate::crypto::EncryptionKey;
 use crate::{
-    decode_build_from_value, decode_hash, decode_origin, encode_build, encode_origin, CharacterRow,
-    ConnectionRecord, Page, Store, StoreError,
+    decode_build_from_value, decode_hash, decode_origin, encode_build, encode_origin, ApiKeyRecord,
+    CharacterRow, ConnectionRecord, Page, Store, StoreError,
 };
 
 pub struct SqliteStore {
@@ -56,6 +56,23 @@ impl SqliteStore {
 }
 
 // ── Row mapping ─────────────────────────────────────────────────────────────
+
+fn map_api_key_row(row: SqliteRow) -> Result<ApiKeyRecord, StoreError> {
+    let id: String = row.try_get("id")?;
+    let owner_id: String = row.try_get("owner_id")?;
+    let key_hash: String = row.try_get("key_hash")?;
+    let scope: String = row.try_get("scope")?;
+    let label: String = row.try_get("label")?;
+    let created_at = row.try_get("created_at")?;
+    Ok(ApiKeyRecord {
+        id: Ulid::new(id),
+        owner_id: Ulid::new(owner_id),
+        key_hash,
+        scope,
+        label,
+        created_at,
+    })
+}
 
 fn map_character_row(row: SqliteRow) -> Result<CharacterRow, StoreError> {
     let id: String = row.try_get("id")?;
@@ -203,6 +220,15 @@ impl Store for SqliteStore {
 
             CREATE INDEX IF NOT EXISTS idx_connections_character
                 ON connections(character_id);
+
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id         TEXT PRIMARY KEY,
+                owner_id   TEXT NOT NULL,
+                key_hash   TEXT NOT NULL,
+                scope      TEXT NOT NULL,
+                label      TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
             "#,
         )
         .execute(&self.pool)
@@ -584,5 +610,49 @@ impl Store for SqliteStore {
             return Err(StoreError::NotFound(format!("connection {connection_id}")));
         }
         Ok(())
+    }
+
+    // ── API keys (§17) ──────────────────────────────────────────────────────
+
+    async fn put_api_key(&self, record: &ApiKeyRecord) -> Result<(), StoreError> {
+        sqlx::query(
+            r#"INSERT OR IGNORE INTO api_keys
+               (id, owner_id, key_hash, scope, label, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(record.id.as_str())
+        .bind(record.owner_id.as_str())
+        .bind(&record.key_hash)
+        .bind(&record.scope)
+        .bind(&record.label)
+        .bind(record.created_at)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn list_api_keys(&self) -> Result<Vec<ApiKeyRecord>, StoreError> {
+        let rows = sqlx::query(
+            r#"SELECT id, owner_id, key_hash, scope, label, created_at
+               FROM api_keys ORDER BY id ASC"#,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        rows.into_iter().map(map_api_key_row).collect()
+    }
+
+    async fn revoke_api_key(&self, id: &Ulid) -> Result<bool, StoreError> {
+        let result = sqlx::query("DELETE FROM api_keys WHERE id = ?")
+            .bind(id.as_str())
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    async fn api_key_count(&self) -> Result<i64, StoreError> {
+        let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM api_keys")
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(row.0)
     }
 }
