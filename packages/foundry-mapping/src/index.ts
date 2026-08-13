@@ -6,8 +6,11 @@
 //
 // Phase 1 scope (§19): identity, ancestry, heritage, background, class, level,
 // ability scores, skills, proficiencies, feats, classFeatures, equipment,
-// spellcasting, currencies. Max HP only on export — current HP is session
-// state and is never written (§4, §7.2).
+// spellcasting, currencies, actions, reactions, explorationActivities, notes.
+// SF2e coverage (§3.4, §2.4): drones (chassis + mods), vehicles (role), credits/
+// UPB (in currencies). Max HP only on export — current HP is session state and
+// is never written (§4, §7.2). Resolve Points are also session state (§3.4, §4)
+// and are never written — they live in `session`, not `build`.
 
 import type {
   CharacterBuild,
@@ -89,7 +92,9 @@ export type FoundryItemType =
   | "reaction"
   | "explorationActivity"
   | "classFeature"
-  | "note";
+  | "note"
+  | "drone"
+  | "vehicle";
 
 export interface FoundryItem {
   type: FoundryItemType;
@@ -107,6 +112,11 @@ export interface FoundryItem {
     body?: string;
     title?: string;
     actionType?: string;
+    // SF2e drone (§3.4): chassis type + installed mods.
+    chassis?: string | null;
+    mods?: FoundryDroneMod[];
+    // SF2e vehicle (§3.4): character's role aboard the vehicle.
+    role?: string | null;
   };
   uuid?: string | null;
   flags?: {
@@ -115,6 +125,13 @@ export interface FoundryItem {
       inlinedFallback?: boolean;
     };
   };
+}
+
+/** A drone mod slot on a Foundry drone item (§3.4). Mirrors `SystemRefId`. */
+export interface FoundryDroneMod {
+  slug: string;
+  source?: string | null;
+  foundryUuid?: string | null;
 }
 
 // ── Canonical types (re-exported for adapter convenience) ────────────────────
@@ -453,6 +470,52 @@ function noteToItem(note: CharacterBuild["notes"][number]): FoundryItem {
   };
 }
 
+function droneToItem(drone: CharacterBuild["drones"][number]): FoundryItem {
+  const item: FoundryItem = {
+    type: "drone",
+    name: drone.reference.slug,
+    system: {
+      slug: drone.reference.slug,
+      mods: drone.mods.map((m) => {
+        const mod: FoundryDroneMod = { slug: m.slug };
+        if (m.source) mod.source = m.source;
+        if (m.foundryUuid) mod.foundryUuid = m.foundryUuid;
+        return mod;
+      }),
+    },
+  };
+  if (drone.chassis != null) {
+    item.system.chassis = drone.chassis;
+  }
+  if (drone.reference.source) {
+    item.system.source = drone.reference.source;
+  }
+  if (drone.reference.foundryUuid) {
+    item.uuid = drone.reference.foundryUuid;
+  }
+  return item;
+}
+
+function vehicleToItem(vehicle: CharacterBuild["vehicles"][number]): FoundryItem {
+  const item: FoundryItem = {
+    type: "vehicle",
+    name: vehicle.reference.slug,
+    system: {
+      slug: vehicle.reference.slug,
+    },
+  };
+  if (vehicle.role != null) {
+    item.system.role = vehicle.role;
+  }
+  if (vehicle.reference.source) {
+    item.system.source = vehicle.reference.source;
+  }
+  if (vehicle.reference.foundryUuid) {
+    item.uuid = vehicle.reference.foundryUuid;
+  }
+  return item;
+}
+
 /**
  * Export a canonical `CharacterBuild` to a Foundry Actor (§7.2).
  *
@@ -495,6 +558,8 @@ export function exportActor(build: CharacterBuild, _system: FoundrySystemId): Fo
       ...build.reactions.map(reactionToItem),
       ...build.explorationActivities.map(explorationToItem),
       ...build.notes.map(noteToItem),
+      ...build.drones.map(droneToItem),
+      ...build.vehicles.map(vehicleToItem),
     ],
   };
 }
@@ -558,7 +623,7 @@ function importItems(
   items: FoundryItem[],
 ): Pick<
   CharacterBuild,
-  "feats" | "classFeatures" | "equipment" | "spellcasting" | "actions" | "reactions" | "explorationActivities" | "notes"
+  "feats" | "classFeatures" | "equipment" | "spellcasting" | "actions" | "reactions" | "explorationActivities" | "notes" | "drones" | "vehicles"
 > {
   const feats: CharacterBuild["feats"] = [];
   const classFeatures: CharacterBuild["classFeatures"] = [];
@@ -570,6 +635,8 @@ function importItems(
   const reactions: CharacterBuild["reactions"] = [];
   const explorationActivities: CharacterBuild["explorationActivities"] = [];
   const notes: CharacterBuild["notes"] = [];
+  const drones: CharacterBuild["drones"] = [];
+  const vehicles: CharacterBuild["vehicles"] = [];
 
   for (const item of items) {
     switch (item.type) {
@@ -659,6 +726,32 @@ function importItems(
         });
         break;
       }
+      case "drone": {
+        const drone: CharacterBuild["drones"][number] = {
+          reference: itemToRef(item),
+          mods: (item.system.mods ?? []).map((m) => {
+            const ref: { slug: string; source?: string | null; foundryUuid?: string | null } = { slug: m.slug };
+            if (m.source) ref.source = m.source;
+            if (m.foundryUuid) ref.foundryUuid = m.foundryUuid;
+            return ref;
+          }),
+        };
+        if (item.system.chassis != null) {
+          drone.chassis = item.system.chassis;
+        }
+        drones.push(drone);
+        break;
+      }
+      case "vehicle": {
+        const vehicle: CharacterBuild["vehicles"][number] = {
+          reference: itemToRef(item),
+        };
+        if (item.system.role != null) {
+          vehicle.role = item.system.role;
+        }
+        vehicles.push(vehicle);
+        break;
+      }
     }
   }
 
@@ -671,6 +764,8 @@ function importItems(
     reactions,
     explorationActivities,
     notes,
+    drones,
+    vehicles,
   };
 }
 
@@ -717,6 +812,8 @@ export function importActor(actor: FoundryActor): {
   reactions: CharacterBuild["reactions"];
   explorationActivities: CharacterBuild["explorationActivities"];
   notes: CharacterBuild["notes"];
+  drones: CharacterBuild["drones"];
+  vehicles: CharacterBuild["vehicles"];
 } {
   const imported = importItems(actor.items);
 

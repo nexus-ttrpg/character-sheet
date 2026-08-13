@@ -54,6 +54,9 @@ const FIELD_COVERAGE: readonly string[] = [
   "build.reactions",
   "build.explorationActivities",
   "build.notes",
+  // SF2e coverage (§3.4, §2.4).
+  "build.drones",
+  "build.vehicles",
 ];
 
 // ── The adapter ──────────────────────────────────────────────────────────────
@@ -88,7 +91,7 @@ export const foundryAdapter: CharacterAdapter<FoundryActor> = {
     const knownTypes = new Set<FoundryItem["type"]>([
       "feat", "classFeature", "weapon", "armor", "consumable",
       "spellcastingEntry", "spell", "action", "reaction",
-      "explorationActivity", "note",
+      "explorationActivity", "note", "drone", "vehicle",
     ]);
     for (const item of raw.items) {
       if (!knownTypes.has(item.type)) {

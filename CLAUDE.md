@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Nexus Sheet** — a cross-VTT (Virtual Tabletop) character synchronization platform for PF2e / SF2e. "Git for TTRPG characters": a canonical character model and a diff/merge engine sitting between platform adapters. Adapters are disposable; the canonical model and the merge engine are the asset.
 
-**Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter boundary, GO decision in ADR 0001), Phase 2.1 (Axum API), and Phase 2.4 (SF2e system plugin) are complete. 180 tests passing (132 Rust + 48 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
+**Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter boundary, GO decision in ADR 0001), Phase 2.1 (Axum API), and Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) are complete. 190 tests passing (132 Rust + 58 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
 
 The architecture proposal lives in `cross-vtt-sync-architecture.md` (~1090 lines) and remains the canonical design reference. ADRs in `docs/adr/` supersede specific choices as the project evolves (the proposal's closing line).
 
@@ -75,7 +75,7 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 ```
 pnpm install                            # install all workspace deps
 pnpm test                               # all packages + adapters
-pnpm test --filter @nexus-sheet/foundry # Foundry adapter (29 tests)
+pnpm test --filter @nexus-sheet/foundry # Foundry adapter (39 tests)
 pnpm test --filter @nexus-sheet/adapter-sdk  # SDK + contract harness (19 tests)
 ```
 
@@ -135,7 +135,7 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
   - **Not yet done:** API key auth middleware (using hardcoded `default_owner()` for now), rate limiting, testcontainers integration test against Postgres.
 - **2.2 Roll20 adapter** — not started. Collector script, declarative mapping table, signed-payload handshake, chunked apply.
 - **2.3 Foundry relay module** — not started. In-browser module sharing `foundry-mapping`.
-- **2.4 SF2e system plugin ✅ COMPLETE** — `crates/schema-sf2e`: `Sf2ePlugin` implementing `SystemPlugin` (id `sf2e`, validate, derived_stats, content_index). The SF2e struct shapes (drones, `resolve_points` in session, credits/UPB, vehicles) already lived in `schema-core` as shared chassis (§3.4); this plugin adds the SF2e content index and delegates validation/derived-stats to the shared chassis. 8 tests (6 unit + 2 fixture: the SF2e mechanic fixture now validates + produces sane derived stats). The shared PF2e/SF2e chassis logic (ability scores, HP, perception/saves/class DC, cross-field validation) was extracted into `schema-core::chassis` so both plugins share one implementation rather than drifting.
+- **2.4 SF2e system plugin + Foundry SF2e coverage ✅ COMPLETE** — `crates/schema-sf2e`: `Sf2ePlugin` implementing `SystemPlugin` (id `sf2e`, validate, derived_stats, content_index). The SF2e struct shapes (drones, `resolve_points` in session, credits/UPB, vehicles) already lived in `schema-core` as shared chassis (§3.4); this plugin adds the SF2e content index and delegates validation/derived-stats to the shared chassis. 8 tests (6 unit + 2 fixture). Foundry SF2e coverage in `packages/foundry-mapping`: drones (chassis + mods) and vehicles (role) now map to/from Foundry items (`"drone"`/`"vehicle"` item types), round-tripped through the contract harness against the SF2e mechanic fixture. Credits/UPB were already mapped; Resolve Points are session state (§4) and never written (like current HP). 10 new Foundry adapter tests (39 total). The shared PF2e/SF2e chassis logic (ability scores, HP, perception/saves/class DC, cross-field validation) was extracted into `schema-core::chassis` so both plugins share one implementation rather than drifting.
 
 ### Phase 3 — Conflict UX + hardening (NOT STARTED)
 

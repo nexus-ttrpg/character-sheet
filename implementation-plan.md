@@ -1,6 +1,6 @@
 # Nexus Sheet — Implementation Plan
 
-**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.4 (SF2e system plugin) ✅. 180 tests passing (132 Rust + 48 TS).
+**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) ✅. 190 tests passing (132 Rust + 58 TS).
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
 
 The four load-bearing invariants from the proposal are non-negotiable and every task below defers to them: (1) the language boundary — Rust core, TS adapters, and a contributor writing an adapter never installs Rust (§0.1); (2) `sync-engine` is pure and I/O-free (§1, §11.3); (3) one-way codegen from Rust types toward the less-expressive TS target, with committed output and a CI staleness check (§3.6); (4) conflicts are never auto-resolved and rollback is `revert`, not `reset --hard` (§11.3, §11.4).
@@ -294,7 +294,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 **Depends on:** `packages/foundry-mapping` (from 1.3), 2.1.
 **Verify:** a running Foundry world exposes the relay endpoints; an Actor edit produces drift telemetry; direct-world access refuses to run against a locked (running) world.
 
-### 2.4 SF2e system plugin + Foundry SF2e coverage — ✅ plugin / ⏳ Foundry mapping
+### 2.4 SF2e system plugin + Foundry SF2e coverage — ✅ COMPLETE
 
 **Goal:** SF2e at parity for the fields SF2e uses (§3.4, §19).
 
@@ -304,7 +304,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 
 **Depends on:** 0.2 (base types), 1.3 (Foundry mapping extension point), 0.7 (SF2e fixture).
 **Verify:** the SF2e fixture validates; Foundry SF2e Actor round-trips within `fieldCoverage`.
-**Status:** ✅ The `Sf2ePlugin` (`crates/schema-sf2e`) is complete — `id`/`json_schema`/`validate`/`derived_stats`/`content_index`, with an SF2e content index. The SF2e struct shapes already lived in `schema-core` as shared chassis (§3.4); the shared PF2e/SF2e validate + derived-stat logic was extracted into `schema_core::chassis` so both plugins share one implementation. 8 tests (6 unit + 2 fixture: the level-5 mechanic fixture now deserializes, validates, and produces sane derived stats). ⏳ Foundry SF2e coverage in `foundry-mapping` (the TS-side drone/Resolve-Point/credit mapping) is not yet started — that lands with the Foundry SF2e adapter work.
+**Status:** ✅ Complete. The `Sf2ePlugin` (`crates/schema-sf2e`) — `id`/`json_schema`/`validate`/`derived_stats`/`content_index`, with an SF2e content index; the shared PF2e/SF2e validate + derived-stat logic lives in `schema_core::chassis` so both plugins share one implementation (8 tests). Foundry SF2e coverage in `packages/foundry-mapping`: drones (chassis + mods) and vehicles (role) map to/from Foundry items (`"drone"`/`"vehicle"` item types), added to `fieldCoverage` and the contract harness against the SF2e mechanic fixture (10 new Foundry adapter tests, 39 total). Credits/UPB were already mapped in `mapCurrencies`/`importCurrencies`. Resolve Points are session state (§3.4, §4) and are never written — like current HP, they live in `session`, not `build`.
 
 ### Phase 2 gate
 

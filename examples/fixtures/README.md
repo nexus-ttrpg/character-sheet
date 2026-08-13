@@ -21,3 +21,8 @@ Every fixture deserializes into `CharacterBuild` and passes its system plugin's
 `crates/schema-pf2e/tests/fixtures.rs`), the SF2e fixture against `schema-sf2e`
 (tested in `crates/schema-sf2e/tests/fixtures.rs`, §2.4). The SF2e fixture also
 asserts sane derived stats from the shared chassis.
+
+The SF2e fixture additionally round-trips through the Foundry adapter contract
+harness (`adapters/foundry/src/index.test.ts`, §2.4): drones (chassis + mods),
+vehicles (role), and credits/UPB survive `import(export(build))` within the
+declared `fieldCoverage`.

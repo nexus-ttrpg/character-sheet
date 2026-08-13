@@ -6,10 +6,11 @@ and the merge engine are the asset.
 
 **Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter
 boundary — GO decision in [ADR 0001](./docs/adr/0001-phase1-go-no-go-rust-ts-split.md)),
-Phase 2.1 (Axum API), and Phase 2.4 (SF2e system plugin) are complete. 180 tests
-passing (132 Rust + 48 TS). See [`implementation-plan.md`](./implementation-plan.md)
-for the phased build plan and [`cross-vtt-sync-architecture.md`](./cross-vtt-sync-architecture.md)
-for the full design (~1090 lines).
+Phase 2.1 (Axum API), and Phase 2.4 (SF2e system plugin + Foundry SF2e coverage)
+are complete. 190 tests passing (132 Rust + 58 TS). See
+[`implementation-plan.md`](./implementation-plan.md) for the phased build plan
+and [`cross-vtt-sync-architecture.md`](./cross-vtt-sync-architecture.md) for the
+full design (~1090 lines).
 
 ## What's built
 
@@ -24,8 +25,8 @@ for the full design (~1090 lines).
 | `crates/api` | ✅ Complete | 10 | Axum REST API, utoipa OpenAPI, webhooks (Phase 2.1) |
 | `cli/` | ✅ Complete | 6 | `nexus import\|push\|diff\|history` — single static binary |
 | `packages/adapter-sdk` | ✅ Complete | 19 | `CharacterAdapter` interface, contract test harness |
-| `packages/foundry-mapping` | ✅ Complete | — | PF2e Actor ↔ canonical mapping logic |
-| `adapters/foundry` | ✅ Complete | 29 | Reference adapter (identity through spellcasting) |
+| `packages/foundry-mapping` | ✅ Complete | — | PF2e/SF2e Actor ↔ canonical mapping logic (drones, vehicles, credits/UPB) |
+| `adapters/foundry` | ✅ Complete | 39 | Reference adapter (identity through spellcasting; SF2e drones/vehicles) |
 | `packages/schema-types` | ✅ Generated | — | TS types from `canonical.schema.json` |
 | `packages/schema-zod` | ✅ Generated | — | Zod schemas from `canonical.schema.json` |
 
@@ -73,8 +74,8 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 
 ```
 pnpm install                            # install all workspace deps
-pnpm test                               # all packages + adapters (48 tests)
-pnpm test --filter @nexus-sheet/foundry # Foundry adapter (29 tests)
+pnpm test                               # all packages + adapters (58 tests)
+pnpm test --filter @nexus-sheet/foundry # Foundry adapter (39 tests)
 pnpm test --filter @nexus-sheet/adapter-sdk  # SDK + contract harness (19 tests)
 ```
 

@@ -14,7 +14,7 @@ import { resolve } from "node:path";
 import { runContractTests, type AdapterFixture } from "@nexus-sheet/adapter-sdk/testing";
 import type { CharacterBuild } from "@nexus-sheet/schema-types";
 import { foundryAdapter } from "./index.js";
-import { exportActor, importActor, derivedMaxHp, derivedAbilityValue, type FoundryActor } from "@nexus-sheet/foundry-mapping";
+import { exportActor, importActor, derivedMaxHp, derivedAbilityValue, type FoundryActor, type FoundrySystemId } from "@nexus-sheet/foundry-mapping";
 
 // ── Load PF2e fixtures ───────────────────────────────────────────────────────
 
@@ -26,11 +26,12 @@ function loadFixture(filename: string): CharacterBuild {
 const fighter = loadFixture("pf2e-level1-fighter.json");
 const ranger = loadFixture("pf2e-level5-ranger.json");
 const wizard = loadFixture("pf2e-level10-wizard.json");
+const mechanic = loadFixture("sf2e-level5-mechanic.json");
 
 // Build AdapterFixtures: export each canonical build to a Foundry Actor,
 // which becomes the platformPayload for the contract harness.
-function makeFixture(name: string, build: CharacterBuild): AdapterFixture<FoundryActor> {
-  const actor = exportActor(build, "pf2e");
+function makeFixture(name: string, build: CharacterBuild, system: FoundrySystemId): AdapterFixture<FoundryActor> {
+  const actor = exportActor(build, system);
   return {
     name,
     build,
@@ -40,9 +41,10 @@ function makeFixture(name: string, build: CharacterBuild): AdapterFixture<Foundr
 }
 
 const fixtures: AdapterFixture<FoundryActor>[] = [
-  makeFixture("level1-fighter", fighter),
-  makeFixture("level5-ranger", ranger),
-  makeFixture("level10-wizard", wizard),
+  makeFixture("level1-fighter", fighter, "pf2e"),
+  makeFixture("level5-ranger", ranger, "pf2e"),
+  makeFixture("level10-wizard", wizard, "pf2e"),
+  makeFixture("level5-mechanic", mechanic, "sf2e"),
 ];
 
 // ── Run the standard contract suite ──────────────────────────────────────────
@@ -182,6 +184,61 @@ describe("foundry round-trip (§5.1, §16)", () => {
     expect(reimpInt.boosts).toHaveLength(origInt.boosts.length);
     expect(reimpInt.flaws).toHaveLength(origInt.flaws.length);
     expect(reimpInt.itemBonus).toBe(origInt.itemBonus);
+  });
+});
+
+describe("foundry SF2e coverage (§3.4, §2.4)", () => {
+  it("exports drones as items with type 'drone'", () => {
+    const actor = exportActor(mechanic, "sf2e");
+    const drones = actor.items.filter((i) => i.type === "drone");
+    expect(drones).toHaveLength(mechanic.drones.length);
+    expect(drones[0]!.system.slug).toBe(mechanic.drones[0]!.reference.slug);
+    expect(drones[0]!.system.chassis).toBe(mechanic.drones[0]!.chassis);
+    expect(drones[0]!.system.mods).toHaveLength(mechanic.drones[0]!.mods.length);
+    expect(drones[0]!.system.mods![0]!.slug).toBe(mechanic.drones[0]!.mods[0]!.slug);
+  });
+
+  it("exports vehicles as items with type 'vehicle'", () => {
+    const actor = exportActor(mechanic, "sf2e");
+    const vehicles = actor.items.filter((i) => i.type === "vehicle");
+    expect(vehicles).toHaveLength(mechanic.vehicles.length);
+    expect(vehicles[0]!.system.slug).toBe(mechanic.vehicles[0]!.reference.slug);
+    expect(vehicles[0]!.system.role).toBe(mechanic.vehicles[0]!.role);
+  });
+
+  it("exports credits/UPB in currency (§3.4)", () => {
+    const actor = exportActor(mechanic, "sf2e");
+    expect(actor.system.currency.credits).toBe(mechanic.currencies.credits);
+    expect(actor.system.currency.upb).toBe(mechanic.currencies.upb);
+  });
+
+  it("round-trip preserves drone chassis + mods", () => {
+    const actor = exportActor(mechanic, "sf2e");
+    const imported = importActor(actor);
+
+    expect(imported.drones).toHaveLength(mechanic.drones.length);
+    expect(imported.drones[0]!.reference.slug).toBe(mechanic.drones[0]!.reference.slug);
+    expect(imported.drones[0]!.chassis).toBe(mechanic.drones[0]!.chassis);
+    const origModSlugs = mechanic.drones[0]!.mods.map((m) => m.slug).sort();
+    const reimpModSlugs = imported.drones[0]!.mods.map((m) => m.slug).sort();
+    expect(reimpModSlugs).toEqual(origModSlugs);
+  });
+
+  it("round-trip preserves vehicle role", () => {
+    const actor = exportActor(mechanic, "sf2e");
+    const imported = importActor(actor);
+
+    expect(imported.vehicles).toHaveLength(mechanic.vehicles.length);
+    expect(imported.vehicles[0]!.reference.slug).toBe(mechanic.vehicles[0]!.reference.slug);
+    expect(imported.vehicles[0]!.role).toBe(mechanic.vehicles[0]!.role);
+  });
+
+  it("round-trip preserves credits/UPB", () => {
+    const actor = exportActor(mechanic, "sf2e");
+    const imported = importActor(actor);
+
+    expect(imported.currencies.credits).toBe(mechanic.currencies.credits);
+    expect(imported.currencies.upb).toBe(mechanic.currencies.upb);
   });
 });
 
