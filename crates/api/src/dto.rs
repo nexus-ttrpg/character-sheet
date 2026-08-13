@@ -251,3 +251,34 @@ pub struct WebhookResponse {
 pub struct ListWebhooksResponse {
     pub webhooks: Vec<WebhookResponse>,
 }
+
+// ── API keys (§13.1, §17) ───────────────────────────────────────────────────
+
+/// `POST /v1/api-keys` — create a new API key (§13.1).
+///
+/// When the registry is empty (bootstrap), no auth is required. After that,
+/// an `Admin`-scope key is needed to create more keys.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateApiKeyRequest {
+    /// Human-readable label for the key (e.g. "foundry-relay", "cli-dev").
+    pub label: String,
+    /// Permission scope: `read_only`, `sync`, or `admin` (§13.1).
+    pub scope: crate::auth::KeyScope,
+}
+
+/// `POST /v1/api-keys` response — the plaintext key is shown ONCE (§17).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CreateApiKeyResponse {
+    pub id: String,
+    /// The plaintext API key (`nsk_live_…`). Store this securely — it is
+    /// never retrievable again (§17).
+    pub key: String,
+    pub scope: crate::auth::KeyScope,
+    pub label: String,
+}
+
+/// `GET /v1/api-keys` response — key metadata (no plaintext, §17).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ListApiKeysResponse {
+    pub keys: Vec<crate::auth::KeyInfo>,
+}

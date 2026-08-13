@@ -14,19 +14,16 @@ use axum::Json;
 use chrono::Utc;
 use secrecy::ExposeSecret;
 
-use schema_core::{content_hash, testing::minimal_build, CharacterBuild, SystemId, Ulid};
+use schema_core::{content_hash, testing::minimal_build, CharacterBuild, SystemId};
 use store::{new_ulid, parse_ulid, ConnectionRecord};
 use sync_engine::{merge, merge::Resolution, Snapshot};
 
 use crate::adapter_worker;
+use crate::auth::AuthPrincipal;
 use crate::dto::*;
 use crate::error::{ApiError, ApiResult, ErrorBody};
 use crate::patch::{apply_merge, merge_preview_to_json};
 use crate::state::AppState;
-
-fn default_owner() -> Ulid {
-    Ulid::new("00000000000000000000000001")
-}
 
 // ── POST /v1/characters/:id/connections ─────────────────────────────────────
 
@@ -173,6 +170,7 @@ pub async fn delete_connection(
 )]
 pub async fn pull(
     State(state): State<AppState>,
+    axum::Extension(principal): axum::Extension<AuthPrincipal>,
     Path((id, conn_id)): Path<(String, String)>,
     Json(req): Json<PullRequest>,
 ) -> ApiResult<Json<PullResponse>> {
@@ -287,7 +285,7 @@ pub async fn pull(
 
     // 10. Create a merge snapshot (§11.1).
     let snap_id = new_ulid();
-    let owner_id = default_owner();
+    let owner_id = principal.owner_id.clone();
     let now = Utc::now();
     let resolved_count = preview.conflicts.len() as u32;
 

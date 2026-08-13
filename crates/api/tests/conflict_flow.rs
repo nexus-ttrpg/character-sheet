@@ -18,17 +18,32 @@ async fn setup() -> (
     tower::util::BoxCloneService<Request<Body>, axum::response::Response, std::convert::Infallible>,
     String,
     String,
+    String,
 ) {
     let store = SqliteStore::connect_in_memory().await.unwrap();
     store.migrate().await.unwrap();
 
     let key = EncryptionKey::generate();
-    let state = api::state::AppState::new(
+
+    // Bootstrap an Admin API key so the test can authenticate (§13.1).
+    let mut registry = api::auth::ApiKeyRegistry::new();
+    let owner = store::new_ulid();
+    registry.bootstrap(
+        "nsk_live_test_admin_key",
+        owner.clone(),
+        api::auth::KeyScope::Admin,
+        "test",
+    );
+
+    let state = api::state::AppState::with_api_keys(
         Arc::new(store),
         std::path::PathBuf::from("/tmp/nexus-adapters"),
         key,
+        registry,
     );
     let router = app(state);
+
+    let auth_header = "Bearer nsk_live_test_admin_key".to_string();
 
     // 1. Create a character.
     let build_json = serde_json::to_value(minimal_build()).unwrap();
@@ -43,6 +58,7 @@ async fn setup() -> (
                 .method("POST")
                 .uri("/v1/characters")
                 .header("content-type", "application/json")
+                .header("authorization", &auth_header)
                 .body(Body::from(serde_json::to_vec(&create_req).unwrap()))
                 .unwrap(),
         )
@@ -70,6 +86,7 @@ async fn setup() -> (
                 .method("POST")
                 .uri(format!("/v1/characters/{char_id}/connections"))
                 .header("content-type", "application/json")
+                .header("authorization", &auth_header)
                 .body(Body::from(serde_json::to_vec(&conn_req).unwrap()))
                 .unwrap(),
         )
@@ -85,7 +102,7 @@ async fn setup() -> (
     // Wrap router in BoxCloneService so it can be returned.
     let boxed = tower::util::BoxCloneService::new(router);
 
-    (boxed, char_id, conn_id)
+    (boxed, char_id, conn_id, auth_header)
 }
 
 async fn send_json(
@@ -97,6 +114,7 @@ async fn send_json(
     method: &str,
     uri: &str,
     body: serde_json::Value,
+    auth_header: &str,
 ) -> (StatusCode, serde_json::Value) {
     let resp = router
         .clone()
@@ -105,7 +123,38 @@ async fn send_json(
                 .method(method)
                 .uri(uri)
                 .header("content-type", "application/json")
+                .header("authorization", auth_header)
                 .body(Body::from(serde_json::to_vec(&body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let status = resp.status();
+    let body_bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let json: serde_json::Value =
+        serde_json::from_slice(&body_bytes).unwrap_or(serde_json::json!(null));
+    (status, json)
+}
+
+async fn send_get(
+    router: &tower::util::BoxCloneService<
+        Request<Body>,
+        axum::response::Response,
+        std::convert::Infallible,
+    >,
+    uri: &str,
+    auth_header: &str,
+) -> (StatusCode, serde_json::Value) {
+    let resp = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(uri)
+                .header("authorization", auth_header)
+                .body(Body::empty())
                 .unwrap(),
         )
         .await
@@ -121,25 +170,13 @@ async fn send_json(
 
 #[tokio::test]
 async fn conflict_flow_create_patch_pull_resolve() {
-    let (router, char_id, conn_id) = setup().await;
+    let (router, char_id, conn_id, auth) = setup().await;
 
     // 3. PATCH the character — change the name (ours diverges).
     let head_resp: serde_json::Value = {
-        let resp = router
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("GET")
-                    .uri(format!("/v1/characters/{char_id}"))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        let body = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
-            .await
-            .unwrap();
-        serde_json::from_slice(&body).unwrap()
+        let (status, body) = send_get(&router, &format!("/v1/characters/{char_id}"), &auth).await;
+        assert_eq!(status, StatusCode::OK);
+        body
     };
     let expected_hash = head_resp["content_hash"].as_str().unwrap();
 
@@ -153,6 +190,7 @@ async fn conflict_flow_create_patch_pull_resolve() {
         "PATCH",
         &format!("/v1/characters/{char_id}"),
         patch_body,
+        &auth,
     )
     .await;
     assert_eq!(status, StatusCode::OK, "PATCH should succeed");
@@ -183,6 +221,7 @@ async fn conflict_flow_create_patch_pull_resolve() {
         "POST",
         &format!("/v1/characters/{char_id}/connections/{conn_id}/pull"),
         pull_body,
+        &auth,
     )
     .await;
 
@@ -213,21 +252,9 @@ async fn conflict_flow_create_patch_pull_resolve() {
 
     // Get current HEAD.
     let head_resp: serde_json::Value = {
-        let resp = router
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("GET")
-                    .uri(format!("/v1/characters/{char_id}"))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        let body = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
-            .await
-            .unwrap();
-        serde_json::from_slice(&body).unwrap()
+        let (status, body) = send_get(&router, &format!("/v1/characters/{char_id}"), &auth).await;
+        assert_eq!(status, StatusCode::OK);
+        body
     };
     let expected_hash = head_resp["content_hash"].as_str().unwrap();
 
@@ -242,27 +269,16 @@ async fn conflict_flow_create_patch_pull_resolve() {
         "PATCH",
         &format!("/v1/characters/{char_id}"),
         patch_body,
+        &auth,
     )
     .await;
     assert_eq!(status, StatusCode::OK, "second PATCH should succeed");
 
     // Get updated HEAD build for "theirs".
     let head_resp: serde_json::Value = {
-        let resp = router
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("GET")
-                    .uri(format!("/v1/characters/{char_id}"))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        let body = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
-            .await
-            .unwrap();
-        serde_json::from_slice(&body).unwrap()
+        let (status, body) = send_get(&router, &format!("/v1/characters/{char_id}"), &auth).await;
+        assert_eq!(status, StatusCode::OK);
+        body
     };
     let mut theirs = head_resp["build"].clone();
     // Change player_name to "Charlie" (theirs) — conflicts with ours="Dave".
@@ -276,6 +292,7 @@ async fn conflict_flow_create_patch_pull_resolve() {
         "POST",
         &format!("/v1/characters/{char_id}/connections/{conn_id}/pull"),
         pull_body,
+        &auth,
     )
     .await;
 
@@ -310,6 +327,7 @@ async fn conflict_flow_create_patch_pull_resolve() {
         "POST",
         &format!("/v1/characters/{char_id}/connections/{conn_id}/pull"),
         resolve_body,
+        &auth,
     )
     .await;
 
@@ -321,22 +339,9 @@ async fn conflict_flow_create_patch_pull_resolve() {
     assert_eq!(resolve_resp["status"].as_str().unwrap(), "merged");
 
     // 7. Verify the DAG — GET history.
-    let resp = router
-        .clone()
-        .oneshot(
-            Request::builder()
-                .method("GET")
-                .uri(format!("/v1/characters/{char_id}/history"))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), StatusCode::OK);
-    let body = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
-        .await
-        .unwrap();
-    let history: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let (status, history) =
+        send_get(&router, &format!("/v1/characters/{char_id}/history"), &auth).await;
+    assert_eq!(status, StatusCode::OK);
 
     let snapshots = history["snapshots"].as_array().unwrap();
     // We expect: initial (ManualEdit), patch1 (ManualEdit), merge1 (Merge),
@@ -358,25 +363,13 @@ async fn conflict_flow_create_patch_pull_resolve() {
 
 #[tokio::test]
 async fn pull_idempotent_replay() {
-    let (router, char_id, conn_id) = setup().await;
+    let (router, char_id, conn_id, auth) = setup().await;
 
     // Get HEAD build.
     let head_resp: serde_json::Value = {
-        let resp = router
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .method("GET")
-                    .uri(format!("/v1/characters/{char_id}"))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        let body = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
-            .await
-            .unwrap();
-        serde_json::from_slice(&body).unwrap()
+        let (status, body) = send_get(&router, &format!("/v1/characters/{char_id}"), &auth).await;
+        assert_eq!(status, StatusCode::OK);
+        body
     };
 
     // Pull with the same build as HEAD → no_changes (idempotent, §12).
@@ -388,6 +381,7 @@ async fn pull_idempotent_replay() {
         "POST",
         &format!("/v1/characters/{char_id}/connections/{conn_id}/pull"),
         pull_body,
+        &auth,
     )
     .await;
 

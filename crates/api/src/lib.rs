@@ -25,6 +25,7 @@
 //! | GET    | /v1/openapi.json | OpenAPI spec |
 
 pub mod adapter_worker;
+pub mod auth;
 pub mod dto;
 pub mod error;
 pub mod patch;
@@ -61,6 +62,9 @@ use crate::state::AppState;
         routes::webhooks::create_webhook,
         routes::webhooks::list_webhooks,
         routes::webhooks::delete_webhook,
+        routes::api_keys::create_api_key,
+        routes::api_keys::list_api_keys,
+        routes::api_keys::delete_api_key,
     ),
     components(schemas(
         dto::CreateCharacterRequest,
@@ -87,6 +91,11 @@ use crate::state::AppState;
         dto::CreateWebhookRequest,
         dto::WebhookResponse,
         dto::ListWebhooksResponse,
+        dto::CreateApiKeyRequest,
+        dto::CreateApiKeyResponse,
+        dto::ListApiKeysResponse,
+        auth::KeyScope,
+        auth::KeyInfo,
         error::ErrorBody,
     )),
     info(
@@ -171,11 +180,29 @@ pub fn app(state: AppState) -> Router {
             "/v1/webhooks/{id}",
             delete(routes::webhooks::delete_webhook),
         )
+        // API keys (§13.1)
+        .route("/v1/api-keys", post(routes::api_keys::create_api_key))
+        .route("/v1/api-keys", get(routes::api_keys::list_api_keys))
+        .route(
+            "/v1/api-keys/{id}",
+            delete(routes::api_keys::delete_api_key),
+        )
         // OpenAPI
         .route("/v1/openapi.json", get(openapi_handler));
 
     Router::new()
         .merge(api_routes)
+        // Layer order: last added = outermost (runs first).
+        // TraceLayer (outermost) → CorsLayer → rate_limit → auth → routes.
+        // Auth runs before rate_limit so we can key the bucket by principal.
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            auth::rate_limit_middleware,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            auth::auth_middleware,
+        ))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)

@@ -10,6 +10,8 @@ use std::sync::Arc;
 
 use store::{EncryptionKey, Store};
 
+use crate::auth::{ApiKeyRegistry, RateLimiter};
+
 /// Shared state injected into every Axum handler via `State<AppState>`.
 ///
 /// `Clone` is cheap — everything is behind an `Arc`.
@@ -28,6 +30,14 @@ pub struct AppState {
     /// Webhook registry (§13.5). In-memory for Phase 2.1; a production
     /// deployment would persist these and sign payloads from a shared secret.
     pub webhooks: Arc<tokio::sync::RwLock<WebhookRegistry>>,
+
+    /// API key registry (§13.1). In-memory for Phase 2; will move to the
+    /// store with Argon2 hashing when keys are persisted (§17).
+    pub api_keys: Arc<tokio::sync::RwLock<ApiKeyRegistry>>,
+
+    /// Per-key rate limiter (§17). In-memory token bucket; multi-instance
+    /// hosted would use Redis.
+    pub rate_limiter: Arc<RateLimiter>,
 }
 
 impl AppState {
@@ -41,6 +51,25 @@ impl AppState {
             adapters_dir,
             encryption_key: Arc::new(encryption_key),
             webhooks: Arc::new(tokio::sync::RwLock::new(WebhookRegistry::new())),
+            api_keys: Arc::new(tokio::sync::RwLock::new(ApiKeyRegistry::new())),
+            rate_limiter: Arc::new(RateLimiter::new()),
+        }
+    }
+
+    /// Like `new`, but with a pre-seeded API key registry (for tests/dev).
+    pub fn with_api_keys(
+        store: Arc<dyn Store>,
+        adapters_dir: PathBuf,
+        encryption_key: EncryptionKey,
+        api_keys: ApiKeyRegistry,
+    ) -> Self {
+        Self {
+            store,
+            adapters_dir,
+            encryption_key: Arc::new(encryption_key),
+            webhooks: Arc::new(tokio::sync::RwLock::new(WebhookRegistry::new())),
+            api_keys: Arc::new(tokio::sync::RwLock::new(api_keys)),
+            rate_limiter: Arc::new(RateLimiter::new()),
         }
     }
 }

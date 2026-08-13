@@ -34,6 +34,15 @@ pub enum ApiError {
     #[error("adapter error: {0}")]
     Adapter(String),
 
+    #[error("unauthorized: {0}")]
+    Unauthorized(String),
+
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
+    #[error("rate limited: {0}")]
+    RateLimited(String),
+
     #[error("store error: {0}")]
     Store(String),
 
@@ -99,6 +108,33 @@ impl IntoResponse for ApiError {
                 StatusCode::BAD_GATEWAY,
                 ErrorBody {
                     error: "adapter_error".into(),
+                    message: msg.clone(),
+                    merge_preview: None,
+                    current_hash: None,
+                },
+            ),
+            ApiError::Unauthorized(msg) => (
+                StatusCode::UNAUTHORIZED,
+                ErrorBody {
+                    error: "unauthorized".into(),
+                    message: msg.clone(),
+                    merge_preview: None,
+                    current_hash: None,
+                },
+            ),
+            ApiError::Forbidden(msg) => (
+                StatusCode::FORBIDDEN,
+                ErrorBody {
+                    error: "forbidden".into(),
+                    message: msg.clone(),
+                    merge_preview: None,
+                    current_hash: None,
+                },
+            ),
+            ApiError::RateLimited(msg) => (
+                StatusCode::TOO_MANY_REQUESTS,
+                ErrorBody {
+                    error: "rate_limited".into(),
                     message: msg.clone(),
                     merge_preview: None,
                     current_hash: None,

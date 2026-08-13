@@ -3,25 +3,15 @@
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use chrono::Utc;
-use schema_core::{
-    content_hash, testing::minimal_build, CharacterBuild, CharacterMeta, SystemId, Ulid,
-};
+use schema_core::{content_hash, testing::minimal_build, CharacterBuild, CharacterMeta, SystemId};
 use store::{new_ulid, parse_ulid};
 use sync_engine::{diff, Snapshot, SnapshotOrigin};
 
+use crate::auth::AuthPrincipal;
 use crate::dto::*;
 use crate::error::{ApiError, ApiResult, ErrorBody};
 use crate::patch::{field_diffs_to_json, set_at_path};
 use crate::state::AppState;
-
-// ── Default owner ───────────────────────────────────────────────────────────
-//
-// Until auth middleware lands (§13.1), all operations use a fixed owner id.
-// When API-key auth is wired, this will come from the authenticated principal.
-
-fn default_owner() -> Ulid {
-    Ulid::new("00000000000000000000000001")
-}
 
 // ── POST /v1/characters ─────────────────────────────────────────────────────
 
@@ -36,6 +26,7 @@ fn default_owner() -> Ulid {
 )]
 pub async fn create_character(
     State(state): State<AppState>,
+    axum::Extension(principal): axum::Extension<AuthPrincipal>,
     Json(req): Json<CreateCharacterRequest>,
 ) -> ApiResult<Json<CreateCharacterResponse>> {
     let build: CharacterBuild = serde_json::from_value(req.build)?;
@@ -47,7 +38,7 @@ pub async fn create_character(
 
     let char_id = new_ulid();
     let snap_id = new_ulid();
-    let owner_id = default_owner();
+    let owner_id = principal.owner_id.clone();
     let now = Utc::now();
 
     let meta = CharacterMeta {
@@ -98,9 +89,10 @@ pub async fn create_character(
 )]
 pub async fn list_characters(
     State(state): State<AppState>,
+    axum::Extension(principal): axum::Extension<AuthPrincipal>,
     Query(q): Query<ListCharactersQuery>,
 ) -> ApiResult<Json<ListCharactersResponse>> {
-    let owner = default_owner();
+    let owner = principal.owner_id.clone();
     let limit = q.limit.min(200);
 
     let cursor = match &q.cursor {
@@ -190,6 +182,7 @@ pub async fn get_character(
 )]
 pub async fn patch_character(
     State(state): State<AppState>,
+    axum::Extension(principal): axum::Extension<AuthPrincipal>,
     Path(id): Path<String>,
     Json(req): Json<PatchCharacterRequest>,
 ) -> ApiResult<Json<PatchCharacterResponse>> {
@@ -228,7 +221,7 @@ pub async fn patch_character(
     }
 
     let snap_id = new_ulid();
-    let owner_id = default_owner();
+    let owner_id = principal.owner_id.clone();
     let now = Utc::now();
 
     let snapshot = Snapshot::new(
@@ -346,6 +339,7 @@ pub async fn get_history(
 )]
 pub async fn rollback(
     State(state): State<AppState>,
+    axum::Extension(principal): axum::Extension<AuthPrincipal>,
     Path(id): Path<String>,
     Json(req): Json<RollbackRequest>,
 ) -> ApiResult<Json<RollbackResponse>> {
@@ -366,7 +360,7 @@ pub async fn rollback(
 
     let content_hash = target.content_hash;
     let snap_id = new_ulid();
-    let owner_id = default_owner();
+    let owner_id = principal.owner_id.clone();
     let now = Utc::now();
 
     // Rollback is `revert`, not `reset --hard` (§11.4): a new snapshot carrying
