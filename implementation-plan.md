@@ -1,6 +1,6 @@
 # Nexus Sheet — Implementation Plan
 
-**Status:** Pre-implementation plan, derived from `cross-vtt-sync-architecture.md` (the architecture proposal).
+**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.4 (SF2e system plugin) ✅. 180 tests passing (132 Rust + 48 TS).
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
 
 The four load-bearing invariants from the proposal are non-negotiable and every task below defers to them: (1) the language boundary — Rust core, TS adapters, and a contributor writing an adapter never installs Rust (§0.1); (2) `sync-engine` is pure and I/O-free (§1, §11.3); (3) one-way codegen from Rust types toward the less-expressive TS target, with committed output and a CI staleness check (§3.6); (4) conflicts are never auto-resolved and rollback is `revert`, not `reset --hard` (§11.3, §11.4).
@@ -56,7 +56,7 @@ The single most sequence-sensitive fact: **the codegen staleness check (0.4) mus
 
 ---
 
-## Phase 0 — Foundations (weeks 1–4)
+## Phase 0 — Foundations (weeks 1–4) ✅ COMPLETE
 
 Goal: the correctness-critical core exists, is property-tested, and the cross-language schema guarantee is enforced by CI before anything builds on top of it.
 
@@ -155,7 +155,7 @@ Goal: the correctness-critical core exists, is property-tested, and the cross-la
 **Depends on:** 0.2 (types to validate against), 0.3 (PF2e validation). Needed by 0.5's proptest and by 1.2's contract harness.
 **Verify:** every fixture deserializes into `CharacterBuild` and passes `schema-pf2e`'s `validate`.
 
-### Phase 0 gate
+### Phase 0 gate ✅ PASSED
 
 All of:
 - `cargo test --workspace` green; `pnpm test` green (even if mostly stubs).
@@ -169,7 +169,7 @@ If the codegen staleness check is not green here, **stop** — nothing in Phase 
 
 ---
 
-## Phase 1 — The adapter boundary (weeks 5–10)  ⚑ RISK CONCENTRATION
+## Phase 1 — The adapter boundary (weeks 5–10) ✅ COMPLETE (GO — ADR 0001) ⚑ RISK CONCENTRATION
 
 Goal: prove the cross-language machinery end to end with one real adapter. This is where the Rust/TS split either earns its keep or reveals that all-TypeScript was the better call (§0.2, §19).
 
@@ -227,7 +227,13 @@ Goal: prove the cross-language machinery end to end with one real adapter. This 
 **Depends on:** 1.1 (host), 1.3 (Foundry adapter), 0.6 (store).
 **Verify:** `nexus import --foundry <world>` produces a snapshot; `nexus diff` shows field-level changes; `nexus push --foundry` writes back and records a new snapshot.
 
-### Phase 1 gate — GO / NO-GO  ⚑
+### Phase 1 gate — GO / NO-GO  ⚑ ✅ PASSED (ADR 0001)
+
+**Decision: GO.** Retain the Rust core / TypeScript adapter split. The
+maintenance burden is measurable and bounded (~25 lines of V8 scope/promise
+code, `LocalSet` at call sites, esbuild bundle step). The sync-engine's purity,
+property-testability, and structural boundary enforcement earn their keep. See
+[`docs/adr/0001-phase1-go-no-go-rust-ts-split.md`](./docs/adr/0001-phase1-go-no-go-rust-ts-split.md).
 
 This is not just a test pass; it is the explicit decision point from §0.2/§19/§21. All of:
 
@@ -241,11 +247,11 @@ This is not just a test pass; it is the explicit decision point from §0.2/§19/
 
 ---
 
-## Phase 2 — API + second adapter (weeks 11–16)
+## Phase 2 — API + second adapter (weeks 11–16) — IN PROGRESS
 
 Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry relay, and SF2e parity.
 
-### 2.1 Axum API — CRUD, connections, sync, webhooks, auth
+### 2.1 Axum API — CRUD, connections, sync, webhooks, auth ✅ COMPLETE
 
 **Goal:** the REST surface from §13, OpenAPI generated from the same types via `utoipa` (§13, §14).
 
@@ -257,6 +263,8 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 
 **Depends on:** 1.4 (CLI shares the API's store and sync flow), 0.6.
 **Verify:** `testcontainers` integration test exercising the full conflict flow end to end: create → divergent platform edit → `pull` returns `409` with `mergePreview` → re-request with resolutions → verify the DAG (§16, §13.3).
+**Status:** ✅ Complete. 10 tests (8 unit + 2 integration). The full conflict flow test (`crates/api/tests/conflict_flow.rs`) exercises create → PATCH → pull (auto-merge) → PATCH → pull (409 conflict) → resolve → verify 5-snapshot DAG. Plus idempotent replay test. OpenAPI spec served at `/v1/openapi.json`.
+**Not yet done:** API key auth middleware (using hardcoded `default_owner()` for now), rate limiting, testcontainers integration test against Postgres.
 
 ### 2.2 Roll20 adapter — collector, handshake, chunked apply
 
@@ -286,7 +294,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 **Depends on:** `packages/foundry-mapping` (from 1.3), 2.1.
 **Verify:** a running Foundry world exposes the relay endpoints; an Actor edit produces drift telemetry; direct-world access refuses to run against a locked (running) world.
 
-### 2.4 SF2e system plugin + Foundry SF2e coverage
+### 2.4 SF2e system plugin + Foundry SF2e coverage — ✅ plugin / ⏳ Foundry mapping
 
 **Goal:** SF2e at parity for the fields SF2e uses (§3.4, §19).
 
@@ -296,6 +304,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 
 **Depends on:** 0.2 (base types), 1.3 (Foundry mapping extension point), 0.7 (SF2e fixture).
 **Verify:** the SF2e fixture validates; Foundry SF2e Actor round-trips within `fieldCoverage`.
+**Status:** ✅ The `Sf2ePlugin` (`crates/schema-sf2e`) is complete — `id`/`json_schema`/`validate`/`derived_stats`/`content_index`, with an SF2e content index. The SF2e struct shapes already lived in `schema-core` as shared chassis (§3.4); the shared PF2e/SF2e validate + derived-stat logic was extracted into `schema_core::chassis` so both plugins share one implementation. 8 tests (6 unit + 2 fixture: the level-5 mechanic fixture now deserializes, validates, and produces sane derived stats). ⏳ Foundry SF2e coverage in `foundry-mapping` (the TS-side drone/Resolve-Point/credit mapping) is not yet started — that lands with the Foundry SF2e adapter work.
 
 ### Phase 2 gate
 

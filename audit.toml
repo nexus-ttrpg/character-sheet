@@ -1,0 +1,30 @@
+# cargo-audit configuration — vulnerability scanning of Cargo.lock (§14, §17).
+# Parallel to deny.toml (cargo-deny). cargo-audit scans the *entire* lockfile
+# regardless of which Cargo features are enabled, so advisories on crates that
+# are resolved-but-never-compiled still surface and must be acknowledged here.
+# Keep this list in sync with deny.toml's `[advisories] ignore` when silencing
+# an advisory in both tools.
+
+[advisories]
+ignore = [
+    # rsa 0.9.10 — RUSTSEC-2023-0071 (Marvin Attack: timing sidechannel on RSA
+    # private-key operations, severity 5.9 medium).
+    #
+    # Transitive dep of sqlx-mysql: sqlx 0.8 lists its driver crates as optional
+    # dependencies, which Cargo resolves into Cargo.lock even when the gating
+    # feature is NOT enabled. We do not enable sqlx's `mysql` feature — the store
+    # crate uses postgres + sqlite only (crates/store/Cargo.toml, §12) — so `rsa`
+    # is never compiled into any Nexus Sheet binary:
+    #   $ cargo tree -i rsa --target all
+    #   warning: nothing to print.
+    # The advisory has NO fixed upgrade available upstream (as of the advisory
+    # DB). No risk surface (we perform no RSA operations; the crate is uncompiled),
+    # no fix to bump to — acknowledged here rather than left failing CI.
+    "RUSTSEC-2023-0071",
+    # bincode (RUSTSEC-2025-0141) and paste (RUSTSEC-2024-0436) are deliberately
+    # NOT silenced here: cargo-audit treats `unmaintained` as a non-fatal warning
+    # by default, so they don't fail CI and remain useful signal. Both are
+    # unmaintained transitive deps of deno_core with no safe upgrade and are
+    # already acknowledged (silenced) in deny.toml, where cargo-deny treats them
+    # as fatal.
+]

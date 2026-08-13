@@ -9,3 +9,9 @@ description = "SF2e SystemPlugin — drones, Resolve Points, credits/UPB (§3.4)
 
 [dependencies]
 schema-core.workspace = true
+schemars.workspace = true
+serde_json.workspace = true
+semver.workspace = true
+
+[dev-dependencies]
+serde.workspace = true

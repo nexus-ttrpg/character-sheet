@@ -2526,6 +2526,10 @@ name = "schema-sf2e"
 version = "0.1.0"
 dependencies = [
  "schema-core",
+ "schemars",
+ "semver",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

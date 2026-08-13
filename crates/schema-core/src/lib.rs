@@ -32,6 +32,7 @@
 pub mod ability;
 pub mod build_types;
 pub mod character;
+pub mod chassis;
 pub mod extensions;
 pub mod hashing;
 pub mod newtypes;

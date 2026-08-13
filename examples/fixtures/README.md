@@ -16,8 +16,8 @@ JSON. Each fixture is a `CharacterBuild` (the `build` partition only — no `met
 
 ## Verify gate (§0.7)
 
-Every fixture deserializes into `CharacterBuild` and (for PF2e) passes
-`schema-pf2e`'s `validate`. Tested in `crates/schema-pf2e/tests/fixtures.rs`.
-
-The SF2e fixture deserializes but is not yet validated against a system plugin
-(`schema-sf2e` is a scaffold; lands in a later phase).
+Every fixture deserializes into `CharacterBuild` and passes its system plugin's
+`validate`: PF2e fixtures against `schema-pf2e` (tested in
+`crates/schema-pf2e/tests/fixtures.rs`), the SF2e fixture against `schema-sf2e`
+(tested in `crates/schema-sf2e/tests/fixtures.rs`, §2.4). The SF2e fixture also
+asserts sane derived stats from the shared chassis.

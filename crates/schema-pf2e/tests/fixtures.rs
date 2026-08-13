@@ -1,11 +1,12 @@
 //! Fixture verification (§16, §0.7).
 //!
-//! Every fixture in `examples/fixtures/` must:
+//! Every PF2e fixture in `examples/fixtures/` must:
 //! 1. Deserialize into `CharacterBuild` (structural validity by construction).
 //! 2. Pass `schema-pf2e`'s `validate` (semantic validity for PF2e fixtures).
 //!
-//! The SF2e fixture deserializes but is not validated — `schema-sf2e` is a
-//! scaffold (lands in a later phase). When it lands, add a parallel test here.
+//! The SF2e fixture is validated by the parallel suite in `schema-sf2e`'s
+//! `tests/fixtures.rs` against the `Sf2ePlugin` (§2.4). The shared fixture
+//! manifest is asserted here since it spans both systems.
 
 use schema_core::CharacterBuild;
 use schema_core::SystemPlugin;
@@ -18,11 +19,6 @@ const PF2E_LEVEL1_FIGHTER: &str =
 const PF2E_LEVEL10_WIZARD: &str =
     include_str!("../../../examples/fixtures/pf2e-level10-wizard.json");
 const PF2E_LEVEL5_RANGER: &str = include_str!("../../../examples/fixtures/pf2e-level5-ranger.json");
-
-// ── SF2e fixture: deserialize only (no system plugin yet) ───────────────────
-
-const SF2E_LEVEL5_MECHANIC: &str =
-    include_str!("../../../examples/fixtures/sf2e-level5-mechanic.json");
 
 // ── Manifest ────────────────────────────────────────────────────────────────
 
@@ -152,40 +148,6 @@ fn pf2e_level10_wizard_derived_stats() {
 
     // Class DC: level 10 + expert(4) + INT mod 5 = 19
     assert_eq!(stats.class_dc, 19);
-}
-
-// ── SF2e: deserialize only ──────────────────────────────────────────────────
-
-#[test]
-fn sf2e_level5_mechanic_deserializes() {
-    let build: CharacterBuild = serde_json::from_str(SF2E_LEVEL5_MECHANIC)
-        .expect("sf2e-level5-mechanic: failed to deserialize into CharacterBuild");
-
-    assert_eq!(build.identity.name, "Vex Quark");
-    assert_eq!(build.level.get(), 5);
-    assert_eq!(build.class.reference.slug.as_str(), "mechanic");
-
-    // Exercises §3.4 shapes: drones, credits/UPB, vehicles.
-    assert!(!build.drones.is_empty(), "mechanic should have a drone");
-    assert_eq!(build.drones.len(), 1);
-
-    let drone = &build.drones[0];
-    assert_eq!(drone.chassis.as_deref(), Some("combat"));
-    assert_eq!(drone.mods.len(), 3, "drone should have 3 mods");
-
-    assert!(
-        build.currencies.credits.is_some(),
-        "SF2e fixture should have credits"
-    );
-    assert!(
-        build.currencies.upb.is_some(),
-        "SF2e fixture should have UPB"
-    );
-
-    assert!(
-        !build.vehicles.is_empty(),
-        "SF2e fixture should have a vehicle"
-    );
 }
 
 // ── Content hash stability (§9.2) ───────────────────────────────────────────
