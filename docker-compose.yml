@@ -1,0 +1,59 @@
+# Nexus Sheet — self-hosted stack (§12, §14)
+#
+# docker compose up -d
+#
+# Requires:
+#   - NEXUS_ENCRYPTION_KEY_FILE: a 32-byte binary file for credential encryption
+#   - NEXUS_ADMIN_API_KEY: a string for the bootstrap admin API key
+#
+# Generate the encryption key:
+#   head -c 32 /dev/urandom > encryption.key
+#
+# Set the admin API key:
+#   export NEXUS_ADMIN_API_KEY=$(head -c 16 /dev/urandom | xxd -p)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nexus
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus -d nexus"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://nexus:${POSTGRES_PASSWORD:-nexus}@postgres:5432/nexus
+      NEXUS_PORT: "3000"
+      NEXUS_ADAPTERS_DIR: /app/adapters
+      NEXUS_ENCRYPTION_KEY_FILE: /run/secrets/encryption_key
+      NEXUS_ADMIN_API_KEY: ${NEXUS_ADMIN_API_KEY:?NEXUS_ADMIN_API_KEY is required}
+      RUST_LOG: info
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount additional adapter bundles here (bundled single-file ESM)
+      - ./adapters:/app/adapters:ro
+    secrets:
+      - encryption_key
+
+secrets:
+  encryption_key:
+    file: ./encryption.key
+
+volumes:
+  pgdata:

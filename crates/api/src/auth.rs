@@ -179,6 +179,25 @@ impl ApiKeyRegistry {
         self.keys.len() < before
     }
 
+    /// Insert a pre-existing plaintext key (e.g. from `NEXUS_ADMIN_API_KEY`).
+    /// The key is hashed before storage — the plaintext is never retained (§17).
+    pub fn insert_plaintext(
+        &mut self,
+        key: String,
+        owner_id: Ulid,
+        scope: KeyScope,
+        label: String,
+    ) {
+        self.keys.push(StoredKey {
+            id: store::new_ulid(),
+            owner_id,
+            key_hash: hash_key(&key),
+            scope,
+            label,
+            created_at: Utc::now(),
+        });
+    }
+
     /// Whether no keys exist yet (bootstrap mode, §13.1).
     pub fn is_empty(&self) -> bool {
         self.keys.is_empty()

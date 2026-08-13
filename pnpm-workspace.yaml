@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "adapters/*"
+  - "examples/example-adapter"
 
 # pnpm 11+ reads settings here, not from a `pnpm` field in package.json.
 # esbuild (a vitest transitive dep) needs its postinstall to link its platform

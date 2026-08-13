@@ -1,0 +1,28 @@
+{
+  "name": "@nexus-sheet/example-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Clone-rename-implement-ship adapter template (§19 Phase 3.4). A minimal generic-JSON adapter that passes the contract harness out of the box.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "bundle": "esbuild src/bundle.ts --bundle --format=esm --target=es2022 --outfile=dist/bundle/bundle.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nexus-sheet/adapter-sdk": "workspace:*",
+    "@nexus-sheet/schema-types": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0"
+  }
+}

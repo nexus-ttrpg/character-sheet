@@ -7,6 +7,10 @@ license.workspace = true
 repository.workspace = true
 description = "Axum API — REST, OpenAPI via utoipa (§13). CRUD, connections, push/pull/diff, webhooks, auth."
 
+[[bin]]
+name = "nexus-api"
+path = "src/main.rs"
+
 [dependencies]
 schema-core.workspace = true
 sync-engine.workspace = true
@@ -28,9 +32,11 @@ thiserror.workspace = true
 hex.workspace = true
 semver.workspace = true
 tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio.workspace = true
 async-trait.workspace = true
 secrecy.workspace = true
+anyhow = "1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

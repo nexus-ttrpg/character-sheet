@@ -53,6 +53,19 @@ importers:
         specifier: ^0.27.0
         version: 0.27.7
 
+  examples/example-adapter:
+    dependencies:
+      '@nexus-sheet/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../packages/adapter-sdk
+      '@nexus-sheet/schema-types':
+        specifier: workspace:*
+        version: link:../../packages/schema-types
+    devDependencies:
+      esbuild:
+        specifier: ^0.27.0
+        version: 0.27.7
+
   packages/adapter-sdk:
     dependencies:
       '@nexus-sheet/schema-types':
