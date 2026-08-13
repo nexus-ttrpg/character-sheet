@@ -273,7 +273,14 @@ pub async fn pull(
     let merged_hash = content_hash(&merged_build);
 
     // 9. Idempotency: if the merged content equals HEAD, short-circuit.
+    //    Still update last_sync — a no-op pull means the connection is now
+    //    in sync with HEAD, and the next pull needs ancestor = HEAD (not
+    //    ancestor = ours) to detect real conflicts.
     if merged_hash == head.content_hash {
+        state
+            .store
+            .update_connection_sync(&conn_ulid, &head.id)
+            .await?;
         return Ok(Json(PullResponse {
             status: "no_changes".into(),
             new_snapshot_id: Some(head.id.to_string()),

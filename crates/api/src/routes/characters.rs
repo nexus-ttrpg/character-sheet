@@ -387,6 +387,44 @@ pub async fn rollback(
     }))
 }
 
+// ── GET /v1/characters/:id/snapshots/:snap_id ───────────────────────────────
+
+#[utoipa::path(
+    get,
+    path = "/v1/characters/{id}/snapshots/{snap_id}",
+    responses(
+        (status = 200, body = SnapshotResponse),
+        (status = 404, body = ErrorBody),
+    )
+)]
+pub async fn get_snapshot(
+    State(state): State<AppState>,
+    Path((id, snap_id)): Path<(String, String)>,
+) -> ApiResult<Json<SnapshotResponse>> {
+    let _cid = parse_ulid(&id)
+        .ok_or_else(|| ApiError::BadRequest(format!("invalid character ULID: {id}")))?;
+    let sid = parse_ulid(&snap_id)
+        .ok_or_else(|| ApiError::BadRequest(format!("invalid snapshot ULID: {snap_id}")))?;
+
+    let snap = state
+        .store
+        .get_snapshot(&sid)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("snapshot {snap_id} not found")))?;
+
+    Ok(Json(SnapshotResponse {
+        id: snap.id.to_string(),
+        character_id: snap.character_id.to_string(),
+        parent: snap.parent.as_ref().map(|u| u.to_string()),
+        merge_parent: snap.merge_parent.as_ref().map(|u| u.to_string()),
+        content_hash: snap.content_hash.to_hex(),
+        origin: serde_json::to_value(&snap.origin).unwrap_or_default(),
+        created_at: snap.created_at,
+        created_by: snap.created_by.to_string(),
+        build: serde_json::to_value(&snap.build)?,
+    }))
+}
+
 // ── GET /v1/characters/:id/diff?from=…&to=… ─────────────────────────────────
 
 #[utoipa::path(

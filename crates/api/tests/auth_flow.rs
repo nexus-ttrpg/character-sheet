@@ -394,16 +394,27 @@ async fn rate_limit_write_bucket_exhausts() {
 
     let admin_key = bootstrap_admin(&router).await;
 
-    // The write bucket capacity is 30 (WRITE_CONFIG). Send 31 POST requests
-    // to /v1/api-keys — the 31st should get 429.
+    // The write bucket capacity is 30 (WRITE_CONFIG). Send 35 POST requests
+    // to /v1/characters — the 31st should get 429.
+    //
+    // We POST to /v1/characters (not /v1/api-keys) because creating API keys
+    // invalidates the auth cache, forcing an O(N) Argon2 re-verify on each
+    // request — slow enough for the token bucket to refill between requests.
+    // Character creation keeps the cache warm, so requests are fast and the
+    // bucket is exhausted before it can refill.
+    let build = serde_json::to_value(minimal_build()).unwrap();
     let mut got_429 = false;
     for i in 0..35 {
         let (status, _) = send(
             &router,
             "POST",
-            "/v1/api-keys",
+            "/v1/characters",
             Some(&admin_key),
-            Some(serde_json::json!({"label": format!("key-{i}"), "scope": "sync"})),
+            Some(serde_json::json!({
+                "build": build,
+                "system": "pf2e",
+                "display_name": format!("char-{i}"),
+            })),
         )
         .await;
         if status == StatusCode::TOO_MANY_REQUESTS {

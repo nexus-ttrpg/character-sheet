@@ -13,6 +13,7 @@
 //! | `NEXUS_ADAPTERS_DIR` | no | `./adapters` | Directory holding adapter bundles |
 //! | `NEXUS_ENCRYPTION_KEY_FILE` | no¹ | — | Path to a 32-byte key file for credential encryption (§17) |
 //! | `NEXUS_ADMIN_API_KEY` | no | — | Bootstrap admin API key (full scope, never hashed) |
+//! | `NEXUS_WEB_DIR` | no | — | Directory of built web UI assets to serve as the router fallback (Phase 3.1) |
 //!
 //! ¹ If unset, a random key is generated with a warning. This is fine for dev
 //! but **not for production** — encrypted credentials become unreadable after
@@ -53,6 +54,8 @@ async fn main() -> Result<()> {
 
     let encryption_key = load_encryption_key()?;
 
+    let web_dir = std::env::var("NEXUS_WEB_DIR").ok().map(PathBuf::from);
+
     tracing::info!("connecting to Postgres");
     let store = PgStore::connect(&database_url)
         .await
@@ -61,7 +64,11 @@ async fn main() -> Result<()> {
 
     let store: Arc<dyn Store> = Arc::new(store);
 
-    let state = AppState::new(store.clone(), adapters_dir, encryption_key);
+    let mut state = AppState::new(store.clone(), adapters_dir, encryption_key);
+    if let Some(dir) = &web_dir {
+        tracing::info!("serving web UI from {}", dir.display());
+        state = state.with_web_dir(dir.clone());
+    }
 
     if let Ok(admin_key) = std::env::var("NEXUS_ADMIN_API_KEY") {
         tracing::info!("seeding admin API key from NEXUS_ADMIN_API_KEY");

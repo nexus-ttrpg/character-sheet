@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexus Sheet</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header id="topbar">
+      <a class="brand" href="#/">Nexus Sheet</a>
+      <span class="subtitle">cross-VTT character sync</span>
+      <form id="conn-form" class="conn">
+        <label>API base
+          <input id="base-url" type="text" placeholder="http://localhost:3000" />
+        </label>
+        <label>API key
+          <input id="api-key" type="password" placeholder="nsk_live_…" autocomplete="off" />
+        </label>
+        <button id="conn-btn" type="submit">Connect</button>
+        <span id="conn-status" class="conn-status"></span>
+      </form>
+    </header>
+    <main id="app"></main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

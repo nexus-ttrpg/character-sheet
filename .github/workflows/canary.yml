@@ -1,17 +1,14 @@
-# Canary job (§16, §21) — detects upstream format changes.
+# Canary job (§16, §21) — detects adapter regressions and upstream format changes.
 #
-# A real canary imports a known test character from each live third-party
-# platform and alerts if the import fails or produces unexpected warnings.
-# This scaffold runs the adapter contract tests on a schedule — they use
-# fixtures, not live platforms, so they catch regressions in our mapping
-# logic but not upstream format changes.
-#
-# To make this a real canary:
-# 1. Deploy a test Foundry world + Roll20 campaign with known characters
-# 2. Store relay API keys as GitHub secrets
-# 3. Add a script that imports each test character via the API and diffs
-#    the output against a pinned baseline
-# 4. Alert on diff (Slack webhook / GitHub issue)
+# Three layers:
+# 1. contract-tests — adapter SDK contract harness (catches mapping regressions)
+# 2. e2e-gate — full Foundry→canonical→Foundry cycle through the V8 sandbox
+#    (push→import→merge→conflict→resolve→export). Exercises the real adapter
+#    bundle, not just fixtures. Catches regressions in adapter.export/import,
+#    the adapter-worker bridge, and the merge engine against real PF2e data.
+# 3. live-canary — hits an external staging API with a live Foundry relay.
+#    Catches upstream format changes. Only runs when CANARY_API_URL +
+#    CANARY_API_KEY secrets are present. See scripts/canary.sh for setup.
 #
 # This workflow runs weekly + on demand.
 
@@ -37,6 +34,39 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
         name: Adapter contract tests (canary)
+
+  e2e-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @nexus-sheet/foundry-adapter bundle
+        name: Build Foundry adapter bundle
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.97"
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p api --test e2e_gate -- --nocapture
+        name: E2E gate — Foundry→canonical→Foundry divergent merge
+
+  live-canary:
+    runs-on: ubuntu-latest
+    # Only run when live credentials are configured.
+    if: ${{ vars.ENABLE_LIVE_CANARY == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Live platform canary
+        env:
+          CANARY_API_URL: ${{ secrets.CANARY_API_URL }}
+          CANARY_API_KEY: ${{ secrets.CANARY_API_KEY }}
+          CANARY_RELAY_URL: ${{ secrets.CANARY_RELAY_URL }}
+        run: ./scripts/canary.sh
 
   rust-tests:
     runs-on: ubuntu-latest

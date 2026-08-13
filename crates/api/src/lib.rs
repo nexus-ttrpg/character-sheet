@@ -51,6 +51,7 @@ use crate::state::AppState;
         routes::characters::get_history,
         routes::characters::rollback,
         routes::characters::diff_snapshots,
+        routes::characters::get_snapshot,
         routes::connections::create_connection,
         routes::connections::list_connections,
         routes::connections::delete_connection,
@@ -78,6 +79,7 @@ use crate::state::AppState;
         dto::RollbackRequest,
         dto::RollbackResponse,
         dto::DiffResponse,
+        dto::SnapshotResponse,
         dto::CreateConnectionRequest,
         dto::ConnectionResponse,
         dto::ListConnectionsResponse,
@@ -113,6 +115,12 @@ pub fn openapi_spec() -> OpenApiSpec {
 // ── Router ──────────────────────────────────────────────────────────────────
 
 /// Build the API router with all routes (§13).
+///
+/// When `state.web_dir` is set, static web UI assets are served as the router
+/// fallback (Phase 3.1). Static requests never match a `/v1/*` route, so they
+/// fall through to `ServeDir` — which is layered *outside* the auth + rate-limit
+/// stack (those layers are scoped to `api_routes` only). The web shell must load
+/// before the user presents an API key, so it cannot sit behind auth.
 pub fn app(state: AppState) -> Router {
     let api_routes = Router::new()
         // Characters (§13.2)
@@ -142,6 +150,10 @@ pub fn app(state: AppState) -> Router {
         .route(
             "/v1/characters/{id}/diff",
             get(routes::characters::diff_snapshots),
+        )
+        .route(
+            "/v1/characters/{id}/snapshots/{snap_id}",
+            get(routes::characters::get_snapshot),
         )
         // Connections (§13.3)
         .route(
@@ -187,13 +199,10 @@ pub fn app(state: AppState) -> Router {
             delete(routes::api_keys::delete_api_key),
         )
         // OpenAPI
-        .route("/v1/openapi.json", get(openapi_handler));
-
-    Router::new()
-        .merge(api_routes)
-        // Layer order: last added = outermost (runs first).
-        // TraceLayer (outermost) → CorsLayer → rate_limit → auth → routes.
-        // Auth runs before rate_limit so we can key the bucket by principal.
+        .route("/v1/openapi.json", get(openapi_handler))
+        // Layer order (innermost → outermost on api_routes): auth → rate_limit.
+        // The outer app adds TraceLayer → CorsLayer. Static fallback gets only
+        // trace + cors — never auth or rate limiting.
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth::rate_limit_middleware,
@@ -201,8 +210,17 @@ pub fn app(state: AppState) -> Router {
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth::auth_middleware,
-        ))
-        .layer(tower_http::trace::TraceLayer::new_for_http())
+        ));
+
+    let app = Router::new().merge(api_routes);
+
+    // Static web UI (Phase 3.1) — served as the fallback, outside auth.
+    let app = match &state.web_dir {
+        Some(dir) => app.fallback_service(tower_http::services::ServeDir::new(dir)),
+        None => app,
+    };
+
+    app.layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::cors::CorsLayer::permissive())
         .with_state(state)
 }

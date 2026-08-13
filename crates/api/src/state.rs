@@ -38,6 +38,12 @@ pub struct AppState {
     /// Per-key rate limiter (§17). In-memory token bucket; multi-instance
     /// hosted would use Redis.
     pub rate_limiter: Arc<RateLimiter>,
+
+    /// Optional directory of static web UI assets served by the API as the
+    /// router fallback (Phase 3.1). `None` in tests and when `NEXUS_WEB_DIR`
+    /// is unset — the API serves only `/v1/*`. Static assets bypass auth
+    /// (they are not under `/v1/`).
+    pub web_dir: Option<PathBuf>,
 }
 
 impl AppState {
@@ -53,7 +59,14 @@ impl AppState {
             webhooks: Arc::new(tokio::sync::RwLock::new(WebhookRegistry::new())),
             api_key_cache: Arc::new(ApiKeyCache::new()),
             rate_limiter: Arc::new(RateLimiter::new()),
+            web_dir: None,
         }
+    }
+
+    /// Serve the web UI from `dir` as the router fallback (Phase 3.1).
+    pub fn with_web_dir(mut self, dir: PathBuf) -> Self {
+        self.web_dir = Some(dir);
+        self
     }
 }
 

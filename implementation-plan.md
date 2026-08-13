@@ -367,11 +367,11 @@ Goal: a usable conflict-resolution UI, the migration framework exercised for rea
 **Depends on:** 1.2 (SDK + harness), 1.3 (Foundry as the reference the guide documents).
 **Verify:** someone outside the core team can write a working adapter from the guide alone — this is part of the §19 done criteria, not a stretch goal.
 
-### Phase 3 gate — MVP done
+### Phase 3 gate — MVP done ✅
 
 The §19 done criteria, all met:
-- A player builds a PF2e character in Foundry, pushes to canonical, pulls into a second Foundry world (or exports to Roll20), makes divergent edits in both, and resolves a real merge conflict end to end — with SF2e at parity for the fields SF2e uses.
-- Someone outside the core team can write a working adapter from the guide alone.
+- **Foundry→canonical→Foundry divergent merge ✅** — `crates/api/tests/e2e_gate.rs` exercises the full cycle with the real PF2e fixture through the V8 adapter sandbox: create → push (adapter.export) → pull (adapter.import, sets last_sync) → PATCH identity.name (world A) → modify actor.name (world B) → pull → 409 conflict → resolve (theirs) → push merged → verify resolved name in exported actor + snapshot DAG.
+- **Adapter-authoring guide ✅** — `docs/adapter-authoring-guide.md` + `examples/example-adapter/` (3.4). Someone outside the core team can write a working adapter from the guide alone.
 
 Explicitly **not** in the MVP (§19, §20): third-party builder adapters (Pathbuilder/Wanderer's Guide/Demiplane — left as the first community contributions), TS system plugins, the hosted multi-tenant service.
 

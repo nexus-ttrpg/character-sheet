@@ -143,6 +143,23 @@ pub struct DiffResponse {
     pub diffs: Vec<serde_json::Value>,
 }
 
+/// `GET /v1/characters/:id/snapshots/:snap_id` response — a single snapshot's
+/// build + provenance (Phase 3.1). The web UI fetches this to drive the
+/// client-side WASM diff preview against the same inputs the server computes.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotResponse {
+    pub id: String,
+    pub character_id: String,
+    pub parent: Option<String>,
+    pub merge_parent: Option<String>,
+    pub content_hash: String,
+    pub origin: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub created_by: String,
+    /// The canonical build as raw JSON (§3.3).
+    pub build: serde_json::Value,
+}
+
 // ── Connections (§13.3) ─────────────────────────────────────────────────────
 
 /// `POST /v1/characters/:id/connections` — register a platform connection.

@@ -159,7 +159,7 @@ the `nexus` binary, or use `--adapters-dir /path/to/adapters`.
 
 ## Security notes (§17)
 
-- **API keys** are hashed (SHA-256) and never stored in plaintext. The bootstrap
+- **API keys** are hashed (Argon2id) and never stored in plaintext. The bootstrap
   admin key from `NEXUS_ADMIN_API_KEY` is also hashed on storage. Use scoped keys
   (read-only / sync) for relay modules and other clients.
 - **Connection credentials** (platform tokens) are encrypted at rest with

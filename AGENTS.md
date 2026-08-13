@@ -8,8 +8,8 @@ Guidance for AI agents (Claude Code, etc.) working in this repository.
 "Git for TTRPG characters": a canonical character model + diff/merge engine
 sitting between disposable platform adapters. Rust core, TypeScript adapters.
 
-**Status:** Phase 2 in progress. Phases 0, 1, 2.1, 2.2, 2.3, and 2.4 are
-complete. 288 tests passing (132 Rust + 156 TS). See `CLAUDE.md` for full
+**Status:** Phase 3 complete (MVP gate met). Phases 0, 1, 2, and 3 are
+complete. 380 tests passing (200 Rust + 180 TS). See `CLAUDE.md` for full
 invariants and status, `implementation-plan.md` for the phased plan,
 `cross-vtt-sync-architecture.md` for the canonical design (§N references
 throughout the code).

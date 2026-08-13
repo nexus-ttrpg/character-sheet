@@ -301,8 +301,15 @@ async fn run_api_key_suite(store: &dyn Store) {
         keys[0].id.as_str() < keys[1].id.as_str(),
         "should be ULID-ordered"
     );
-    assert_eq!(keys[0].label, "bootstrap");
-    assert_eq!(keys[1].label, "relay");
+    // Labels follow ID order, not creation order — ULIDs generated within the
+    // same millisecond can sort either way due to the random component.
+    let (label0, label1) = if key1.id.as_str() < key2.id.as_str() {
+        ("bootstrap", "relay")
+    } else {
+        ("relay", "bootstrap")
+    };
+    assert_eq!(keys[0].label, label0);
+    assert_eq!(keys[1].label, label1);
 
     // Revoke key1.
     let revoked = store
