@@ -17,9 +17,14 @@
 //!   snapshot DAG, never destructively rewritten.
 
 pub mod diff;
+pub mod json;
 pub mod merge;
 pub mod snapshot;
 
 pub use diff::{diff, Change, FieldDiff};
+pub use json::{
+    apply_merge, field_diff_to_json, field_diffs_to_json, merge_preview_from_json,
+    merge_preview_to_json, remove_at_path, resolutions_from_json, set_at_path, SyncError,
+};
 pub use merge::{merge, Conflict, MergePreview, Resolution};
 pub use snapshot::{Snapshot, SnapshotOrigin};

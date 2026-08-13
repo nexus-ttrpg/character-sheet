@@ -16,13 +16,12 @@ use secrecy::ExposeSecret;
 
 use schema_core::{content_hash, testing::minimal_build, CharacterBuild, SystemId};
 use store::{new_ulid, parse_ulid, ConnectionRecord};
-use sync_engine::{merge, merge::Resolution, Snapshot};
+use sync_engine::{apply_merge, merge, merge::Resolution, merge_preview_to_json, Snapshot};
 
 use crate::adapter_worker;
 use crate::auth::AuthPrincipal;
 use crate::dto::*;
 use crate::error::{ApiError, ApiResult, ErrorBody};
-use crate::patch::{apply_merge, merge_preview_to_json};
 use crate::state::AppState;
 
 // ── POST /v1/characters/:id/connections ─────────────────────────────────────

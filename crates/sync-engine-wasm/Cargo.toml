@@ -1,0 +1,23 @@
+[package]
+name = "sync-engine-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "WebAssembly bindings for sync-engine — browser-side diff preview (Phase 3.1 spike)."
+
+[lib]
+# `cdylib` for the wasm artifact; `rlib` so `cargo test`/`cargo clippy` can
+# build and test the crate on the host (a pure `cdylib` is not testable).
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+sync-engine.workspace = true
+schema-core.workspace = true
+wasm-bindgen.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"

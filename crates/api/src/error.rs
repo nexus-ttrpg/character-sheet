@@ -92,7 +92,7 @@ impl IntoResponse for ApiError {
                 },
             ),
             ApiError::Conflict { merge_preview } => {
-                let mp_json = crate::patch::merge_preview_to_json(merge_preview);
+                let mp_json = sync_engine::merge_preview_to_json(merge_preview);
                 let n = merge_preview.conflicts.len();
                 (
                     StatusCode::CONFLICT,
@@ -181,6 +181,12 @@ impl From<adapter_host::HostError> for ApiError {
 impl From<serde_json::Error> for ApiError {
     fn from(e: serde_json::Error) -> Self {
         ApiError::BadRequest(format!("serialization error: {e}"))
+    }
+}
+
+impl From<sync_engine::SyncError> for ApiError {
+    fn from(e: sync_engine::SyncError) -> Self {
+        ApiError::BadRequest(e.to_string())
     }
 }
 

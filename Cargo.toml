@@ -5,6 +5,7 @@ members = [
     "crates/schema-pf2e",
     "crates/schema-sf2e",
     "crates/sync-engine",
+    "crates/sync-engine-wasm",
     "crates/store",
     "crates/adapter-host",
     "crates/api",
@@ -26,6 +27,7 @@ schema-core = { path = "crates/schema-core" }
 schema-pf2e = { path = "crates/schema-pf2e" }
 schema-sf2e = { path = "crates/schema-sf2e" }
 sync-engine = { path = "crates/sync-engine" }
+sync-engine-wasm = { path = "crates/sync-engine-wasm" }
 store = { path = "crates/store" }
 adapter-host = { path = "crates/adapter-host" }
 api = { path = "crates/api" }
@@ -35,6 +37,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = { version = "0.8", features = ["chrono"] }
 blake3 = "1"
+# WASM bindings (Phase 3.1) — only consumed by sync-engine-wasm; kept here so
+# the version is pinned in one place alongside the rest of the shared deps.
+wasm-bindgen = "0.2"
 hex = "0.4"
 semver = { version = "1", features = ["serde"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }

@@ -5,12 +5,11 @@ use axum::Json;
 use chrono::Utc;
 use schema_core::{content_hash, testing::minimal_build, CharacterBuild, CharacterMeta, SystemId};
 use store::{new_ulid, parse_ulid};
-use sync_engine::{diff, Snapshot, SnapshotOrigin};
+use sync_engine::{diff, field_diffs_to_json, set_at_path, Snapshot, SnapshotOrigin};
 
 use crate::auth::AuthPrincipal;
 use crate::dto::*;
 use crate::error::{ApiError, ApiResult, ErrorBody};
-use crate::patch::{field_diffs_to_json, set_at_path};
 use crate::state::AppState;
 
 // ── POST /v1/characters ─────────────────────────────────────────────────────
