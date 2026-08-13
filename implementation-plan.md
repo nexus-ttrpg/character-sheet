@@ -1,6 +1,6 @@
 # Nexus Sheet — Implementation Plan
 
-**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) ✅. 190 tests passing (132 Rust + 58 TS).
+**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.2 (Roll20 adapter) ✅, Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) ✅. 238 tests passing (132 Rust + 106 TS).
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
 
 The four load-bearing invariants from the proposal are non-negotiable and every task below defers to them: (1) the language boundary — Rust core, TS adapters, and a contributor writing an adapter never installs Rust (§0.1); (2) `sync-engine` is pure and I/O-free (§1, §11.3); (3) one-way codegen from Rust types toward the less-expressive TS target, with committed output and a CI staleness check (§3.6); (4) conflicts are never auto-resolved and rollback is `revert`, not `reset --hard` (§11.3, §11.4).
@@ -266,7 +266,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 **Status:** ✅ Complete. 10 tests (8 unit + 2 integration). The full conflict flow test (`crates/api/tests/conflict_flow.rs`) exercises create → PATCH → pull (auto-merge) → PATCH → pull (409 conflict) → resolve → verify 5-snapshot DAG. Plus idempotent replay test. OpenAPI spec served at `/v1/openapi.json`.
 **Not yet done:** API key auth middleware (using hardcoded `default_owner()` for now), rate limiting, testcontainers integration test against Postgres.
 
-### 2.2 Roll20 adapter — collector, handshake, chunked apply
+### 2.2 Roll20 adapter — collector, handshake, chunked apply ✅ COMPLETE
 
 **Goal:** the structurally harder second adapter, proving the trait is sufficient against a very different platform (§6, §21 scope-creep row).
 
@@ -279,6 +279,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 
 **Depends on:** 2.1 (the `drift`/`pull`/`push` endpoints it calls), 1.2 (SDK + harness), 0.7 (fixtures).
 **Verify:** contract harness passes; the collector script is auditably short; `drift` on an asleep sandbox returns `Unavailable` (§6.2).
+**Status:** ✅ Complete. 48 tests (contract harness against 3 PF2e fixtures + Roll20-specific tests covering sheet_version validation/throws, lossy ability score round-trip, repeating-row fingerprint matching, detectChanges, capabilities, and round-trip fidelity). The mapping table uses `canonicalPath()` for compile-time path checking and derives `fieldCoverage` from the table itself (§6.3). Ability scores are lossy: Roll20 stores the derived number only; the value round-trips but boosts/flaws are lost (§5.2, warned on both export and import). `capabilities.supportsSessionRead` is false (§4, §6.2). The `drift` endpoint already returns `Unavailable { reason: SandboxNotRunning }` for Roll20 connections (§6.2, wired in `crates/api/src/routes/connections.rs`).
 **Risk:** Roll20's sandbox is unreachable and frequently asleep (§6.2, §21). Document the asymmetry prominently; never build a scraping workaround to fake parity (§21).
 
 ### 2.3 Foundry relay module

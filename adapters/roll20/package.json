@@ -1,0 +1,28 @@
+{
+  "name": "@nexus-sheet/roll20-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Roll20 adapter — the structurally harder second adapter (§6, §21). Flat attribute rows + repeating sections, sandboxed JS, asleep sandboxes. Collector is logic-free; mapping is declarative.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "bundle": "esbuild src/bundle.ts --bundle --format=esm --target=es2022 --outfile=dist/bundle/bundle.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nexus-sheet/adapter-sdk": "workspace:*",
+    "@nexus-sheet/schema-types": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0"
+  }
+}

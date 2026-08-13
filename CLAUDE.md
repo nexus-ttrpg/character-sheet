@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Nexus Sheet** — a cross-VTT (Virtual Tabletop) character synchronization platform for PF2e / SF2e. "Git for TTRPG characters": a canonical character model and a diff/merge engine sitting between platform adapters. Adapters are disposable; the canonical model and the merge engine are the asset.
 
-**Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter boundary, GO decision in ADR 0001), Phase 2.1 (Axum API), and Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) are complete. 190 tests passing (132 Rust + 58 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
+**Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter boundary, GO decision in ADR 0001), Phase 2.1 (Axum API), Phase 2.2 (Roll20 adapter), and Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) are complete. 238 tests passing (132 Rust + 106 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
 
 The architecture proposal lives in `cross-vtt-sync-architecture.md` (~1090 lines) and remains the canonical design reference. ADRs in `docs/adr/` supersede specific choices as the project evolves (the proposal's closing line).
 
@@ -46,7 +46,8 @@ packages/
   adapter-sdk/     CharacterAdapter interface, contract test harness
   foundry-mapping/ PF2e Actor ↔ canonical mapping logic
 adapters/
-  foundry/         Reference adapter (29 tests, esbuild bundle)
+  foundry/         Reference adapter (39 tests, esbuild bundle)
+  roll20/          Second adapter — flat attrs, repeating sections, asleep sandbox (48 tests)
 cli/               `nexus` — Rust, clap, single static binary (import/push/diff/history)
 xtask/             cargo xtask codegen | openapi | fixtures
 examples/          fixtures/ (shared JSON ground-truth), example-adapter/ (Phase 3)
@@ -76,6 +77,7 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 pnpm install                            # install all workspace deps
 pnpm test                               # all packages + adapters
 pnpm test --filter @nexus-sheet/foundry # Foundry adapter (39 tests)
+pnpm test --filter @nexus-sheet/roll20  # Roll20 adapter (48 tests)
 pnpm test --filter @nexus-sheet/adapter-sdk  # SDK + contract harness (19 tests)
 ```
 
@@ -133,7 +135,7 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
 
 - **2.1 Axum API ✅ COMPLETE** — `crates/api`: character CRUD with PATCH optimistic locking (`expectedContentHash` → 409), connections + `pull`/`push`/`diff`/`drift`, history + rollback (revert semantics), HMAC-signed webhooks, utoipa OpenAPI at `/v1/openapi.json`. 10 tests (8 unit + 2 integration including full conflict flow: create → divergent edit → pull 409+mergePreview → resolve → verify DAG). `drift` returns `Unavailable { reason: SandboxNotRunning }` for Roll20 (§6.2).
   - **Not yet done:** API key auth middleware (using hardcoded `default_owner()` for now), rate limiting, testcontainers integration test against Postgres.
-- **2.2 Roll20 adapter** — not started. Collector script, declarative mapping table, signed-payload handshake, chunked apply.
+- **2.2 Roll20 adapter ✅ COMPLETE** — `adapters/roll20`: the structurally harder second adapter, proving the `CharacterAdapter` trait generalizes beyond Foundry. Declarative `ROLL20_PF2E_MAP` mapping table (§6.3) with `canonicalPath()` compile-time path checking and derived `fieldCoverage`. Logic-free collector script (`collector/nexus-collector.js`, ~150 lines, §6.5) — reads attrs verbatim, POSTs signed, writes verbatim, re-announces on sandbox start. Repeating rows matched by content fingerprint, not row id (§6.4). Lossy ability scores (value round-trips, components don't — §5.2). `validate()` checks `sheet_version` and throws `UnsupportedSheetVersion` (§6.4). 48 tests (contract harness + Roll20-specific: sheet_version validation, fingerprint matching, lossy ability scores, detectChanges, round-trip).
 - **2.3 Foundry relay module** — not started. In-browser module sharing `foundry-mapping`.
 - **2.4 SF2e system plugin + Foundry SF2e coverage ✅ COMPLETE** — `crates/schema-sf2e`: `Sf2ePlugin` implementing `SystemPlugin` (id `sf2e`, validate, derived_stats, content_index). The SF2e struct shapes (drones, `resolve_points` in session, credits/UPB, vehicles) already lived in `schema-core` as shared chassis (§3.4); this plugin adds the SF2e content index and delegates validation/derived-stats to the shared chassis. 8 tests (6 unit + 2 fixture). Foundry SF2e coverage in `packages/foundry-mapping`: drones (chassis + mods) and vehicles (role) now map to/from Foundry items (`"drone"`/`"vehicle"` item types), round-tripped through the contract harness against the SF2e mechanic fixture. Credits/UPB were already mapped; Resolve Points are session state (§4) and never written (like current HP). 10 new Foundry adapter tests (39 total). The shared PF2e/SF2e chassis logic (ability scores, HP, perception/saves/class DC, cross-field validation) was extracted into `schema-core::chassis` so both plugins share one implementation rather than drifting.
 
