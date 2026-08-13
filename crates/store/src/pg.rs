@@ -12,11 +12,15 @@ use sqlx::postgres::PgRow;
 use sqlx::types::Json;
 use sqlx::{PgPool, Row as _};
 
-use schema_core::{AdapterId, CharacterMeta, ContentHash, PlatformId, SystemId, Ulid};
+use schema_core::{
+    AdapterId, CharacterMeta, ContentHash, PlatformId, SystemId, Ulid, CURRENT_SCHEMA_VERSION,
+};
 use sync_engine::{Snapshot, SnapshotOrigin};
 
 use crate::crypto::EncryptionKey;
-use crate::{decode_hash, CharacterRow, ConnectionRecord, Page, Store, StoreError};
+use crate::{
+    decode_build_from_value, decode_hash, CharacterRow, ConnectionRecord, Page, Store, StoreError,
+};
 
 pub struct PgStore {
     pool: PgPool,
@@ -69,9 +73,10 @@ fn map_snapshot(row: PgRow) -> Result<Snapshot, StoreError> {
     let character_id: String = row.try_get("character_id")?;
     let parent_id: Option<String> = row.try_get("parent_id")?;
     let merge_parent_id: Option<String> = row.try_get("merge_parent_id")?;
-    let build_json: Json<schema_core::CharacterBuild> = row.try_get("build")?;
+    let build_value: Json<serde_json::Value> = row.try_get("build")?;
     let content_hash: String = row.try_get("content_hash")?;
     let origin_json: Json<SnapshotOrigin> = row.try_get("origin")?;
+    let schema_version: String = row.try_get("schema_version")?;
     let created_at = row.try_get("created_at")?;
     let created_by: String = row.try_get("created_by")?;
     Ok(Snapshot {
@@ -79,7 +84,7 @@ fn map_snapshot(row: PgRow) -> Result<Snapshot, StoreError> {
         character_id: Ulid::new(character_id),
         parent: parent_id.map(Ulid::new),
         merge_parent: merge_parent_id.map(Ulid::new),
-        build: build_json.0,
+        build: decode_build_from_value(build_value.0, &schema_version.parse()?)?,
         content_hash: decode_hash(&content_hash)?,
         origin: origin_json.0,
         created_at,
@@ -145,6 +150,7 @@ impl Store for PgStore {
                 build            JSONB NOT NULL,
                 content_hash     TEXT NOT NULL,
                 origin           JSONB NOT NULL,
+                schema_version   TEXT NOT NULL DEFAULT '0.1.0',
                 created_at       TIMESTAMPTZ NOT NULL,
                 created_by       TEXT NOT NULL
             );
@@ -153,6 +159,12 @@ impl Store for PgStore {
                 ON snapshots(character_id, id);
             CREATE INDEX IF NOT EXISTS idx_snapshots_hash
                 ON snapshots(character_id, content_hash, parent_id);
+
+            -- Add schema_version to pre-existing snapshots tables (§9.3).
+            -- New tables get the column from CREATE TABLE above; this ALTER
+            -- covers databases created before the column existed.
+            ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS schema_version
+                TEXT NOT NULL DEFAULT '0.1.0';
 
             CREATE TABLE IF NOT EXISTS connections (
                 id                      TEXT PRIMARY KEY,
@@ -308,8 +320,8 @@ impl Store for PgStore {
         sqlx::query(
             r#"INSERT INTO snapshots
                (id, character_id, parent_id, merge_parent_id, build,
-                content_hash, origin, created_at, created_by)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                content_hash, origin, schema_version, created_at, created_by)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                ON CONFLICT (id) DO NOTHING"#,
         )
         .bind(snapshot.id.as_str())
@@ -319,6 +331,7 @@ impl Store for PgStore {
         .bind(Json(&snapshot.build))
         .bind(snapshot.content_hash.to_hex())
         .bind(Json(&snapshot.origin))
+        .bind(CURRENT_SCHEMA_VERSION.to_string())
         .bind(snapshot.created_at)
         .bind(snapshot.created_by.as_str())
         .execute(&self.pool)
@@ -329,7 +342,7 @@ impl Store for PgStore {
     async fn get_snapshot(&self, id: &Ulid) -> Result<Option<Snapshot>, StoreError> {
         let row = sqlx::query(
             r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                      content_hash, origin, created_at, created_by
+                      content_hash, origin, schema_version, created_at, created_by
                FROM snapshots WHERE id = $1"#,
         )
         .bind(id.as_str())
@@ -341,7 +354,7 @@ impl Store for PgStore {
     async fn get_head_snapshot(&self, character_id: &Ulid) -> Result<Option<Snapshot>, StoreError> {
         let row = sqlx::query(
             r#"SELECT s.id, s.character_id, s.parent_id, s.merge_parent_id,
-                      s.build, s.content_hash, s.origin, s.created_at, s.created_by
+                      s.build, s.content_hash, s.origin, s.schema_version, s.created_at, s.created_by
                FROM snapshots s
                JOIN characters c ON c.head_snapshot_id = s.id
                WHERE c.id = $1"#,
@@ -365,7 +378,7 @@ impl Store for PgStore {
             Some(c) => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = $1 AND id > $2
                    ORDER BY id ASC LIMIT $3"#,
@@ -379,7 +392,7 @@ impl Store for PgStore {
             None => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = $1
                    ORDER BY id ASC LIMIT $2"#,
@@ -421,7 +434,7 @@ impl Store for PgStore {
             Some(p) => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = $1 AND content_hash = $2 AND parent_id = $3
                    LIMIT 1"#,
@@ -435,7 +448,7 @@ impl Store for PgStore {
             None => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = $1 AND content_hash = $2 AND parent_id IS NULL
                    LIMIT 1"#,

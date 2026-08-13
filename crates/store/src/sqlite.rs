@@ -13,12 +13,14 @@ use secrecy::ExposeSecret;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqliteRow};
 use sqlx::Row as _;
 
-use schema_core::{AdapterId, CharacterMeta, ContentHash, PlatformId, SystemId, Ulid};
+use schema_core::{
+    AdapterId, CharacterMeta, ContentHash, PlatformId, SystemId, Ulid, CURRENT_SCHEMA_VERSION,
+};
 use sync_engine::Snapshot;
 
 use crate::crypto::EncryptionKey;
 use crate::{
-    decode_build, decode_hash, decode_origin, encode_build, encode_origin, CharacterRow,
+    decode_build_from_value, decode_hash, decode_origin, encode_build, encode_origin, CharacterRow,
     ConnectionRecord, Page, Store, StoreError,
 };
 
@@ -86,14 +88,16 @@ fn map_snapshot(row: SqliteRow) -> Result<Snapshot, StoreError> {
     let build_json: String = row.try_get("build")?;
     let content_hash: String = row.try_get("content_hash")?;
     let origin_json: String = row.try_get("origin")?;
+    let schema_version: String = row.try_get("schema_version")?;
     let created_at = row.try_get("created_at")?;
     let created_by: String = row.try_get("created_by")?;
+    let build_value: serde_json::Value = serde_json::from_str(&build_json)?;
     Ok(Snapshot {
         id: Ulid::new(id),
         character_id: Ulid::new(character_id),
         parent: parent_id.map(Ulid::new),
         merge_parent: merge_parent_id.map(Ulid::new),
-        build: decode_build(&build_json)?,
+        build: decode_build_from_value(build_value, &schema_version.parse()?)?,
         content_hash: decode_hash(&content_hash)?,
         origin: decode_origin(&origin_json)?,
         created_at,
@@ -128,6 +132,21 @@ fn map_connection(row: SqliteRow, key: &EncryptionKey) -> Result<ConnectionRecor
     })
 }
 
+/// SQLite doesn't support `ADD COLUMN IF NOT EXISTS`. Try the ALTER and
+/// ignore the "duplicate column name" error for idempotency (§9.3).
+async fn add_column_if_not_exists(
+    pool: &SqlitePool,
+    table: &str,
+    column_def: &str,
+) -> Result<(), StoreError> {
+    let sql = format!("ALTER TABLE {table} ADD COLUMN {column_def}");
+    match sqlx::query(&sql).execute(pool).await {
+        Ok(_) => Ok(()),
+        Err(sqlx::Error::Database(e)) if e.message().contains("duplicate column name") => Ok(()),
+        Err(e) => Err(e.into()),
+    }
+}
+
 // ── Store impl ──────────────────────────────────────────────────────────────
 
 #[async_trait]
@@ -159,6 +178,7 @@ impl Store for SqliteStore {
                 build            TEXT NOT NULL,
                 content_hash     TEXT NOT NULL,
                 origin           TEXT NOT NULL,
+                schema_version   TEXT NOT NULL DEFAULT '0.1.0',
                 created_at       TEXT NOT NULL,
                 created_by       TEXT NOT NULL
             );
@@ -187,6 +207,17 @@ impl Store for SqliteStore {
         )
         .execute(&self.pool)
         .await?;
+
+        // Add schema_version to pre-existing snapshots tables (§9.3). New
+        // tables get the column from CREATE TABLE above; this ALTER covers
+        // databases created before the column existed.
+        add_column_if_not_exists(
+            &self.pool,
+            "snapshots",
+            "schema_version TEXT NOT NULL DEFAULT '0.1.0'",
+        )
+        .await?;
+
         Ok(())
     }
 
@@ -323,8 +354,8 @@ impl Store for SqliteStore {
         sqlx::query(
             r#"INSERT OR IGNORE INTO snapshots
                (id, character_id, parent_id, merge_parent_id, build,
-                content_hash, origin, created_at, created_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+                content_hash, origin, schema_version, created_at, created_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(snapshot.id.as_str())
         .bind(snapshot.character_id.as_str())
@@ -333,6 +364,7 @@ impl Store for SqliteStore {
         .bind(&build_json)
         .bind(snapshot.content_hash.to_hex())
         .bind(&origin_json)
+        .bind(CURRENT_SCHEMA_VERSION.to_string())
         .bind(snapshot.created_at)
         .bind(snapshot.created_by.as_str())
         .execute(&self.pool)
@@ -343,7 +375,7 @@ impl Store for SqliteStore {
     async fn get_snapshot(&self, id: &Ulid) -> Result<Option<Snapshot>, StoreError> {
         let row = sqlx::query(
             r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                      content_hash, origin, created_at, created_by
+                      content_hash, origin, schema_version, created_at, created_by
                FROM snapshots WHERE id = ?"#,
         )
         .bind(id.as_str())
@@ -355,7 +387,7 @@ impl Store for SqliteStore {
     async fn get_head_snapshot(&self, character_id: &Ulid) -> Result<Option<Snapshot>, StoreError> {
         let row = sqlx::query(
             r#"SELECT s.id, s.character_id, s.parent_id, s.merge_parent_id,
-                      s.build, s.content_hash, s.origin, s.created_at, s.created_by
+                      s.build, s.content_hash, s.origin, s.schema_version, s.created_at, s.created_by
                FROM snapshots s
                JOIN characters c ON c.head_snapshot_id = s.id
                WHERE c.id = ?"#,
@@ -379,7 +411,7 @@ impl Store for SqliteStore {
             Some(c) => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = ? AND id > ?
                    ORDER BY id ASC LIMIT ?"#,
@@ -393,7 +425,7 @@ impl Store for SqliteStore {
             None => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = ?
                    ORDER BY id ASC LIMIT ?"#,
@@ -435,7 +467,7 @@ impl Store for SqliteStore {
             Some(p) => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = ? AND content_hash = ? AND parent_id = ?
                    LIMIT 1"#,
@@ -449,7 +481,7 @@ impl Store for SqliteStore {
             None => {
                 sqlx::query(
                     r#"SELECT id, character_id, parent_id, merge_parent_id, build,
-                          content_hash, origin, created_at, created_by
+                          content_hash, origin, schema_version, created_at, created_by
                    FROM snapshots
                    WHERE character_id = ? AND content_hash = ? AND parent_id IS NULL
                    LIMIT 1"#,

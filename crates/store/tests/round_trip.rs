@@ -21,7 +21,7 @@ fn make_character_meta(owner_id: &Ulid) -> CharacterMeta {
     let now = Utc::now();
     CharacterMeta {
         id: store::new_ulid(),
-        schema_version: semver::Version::new(0, 1, 0),
+        schema_version: schema_core::CURRENT_SCHEMA_VERSION.clone(),
         system: SystemId::new("pf2e"),
         owner_id: owner_id.clone(),
         display_name: "Test Character".into(),

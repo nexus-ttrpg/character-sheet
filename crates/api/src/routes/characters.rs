@@ -42,7 +42,7 @@ pub async fn create_character(
 
     let meta = CharacterMeta {
         id: char_id.clone(),
-        schema_version: semver::Version::new(0, 1, 0),
+        schema_version: schema_core::CURRENT_SCHEMA_VERSION.clone(),
         system,
         owner_id: owner_id.clone(),
         display_name,

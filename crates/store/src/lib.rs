@@ -243,6 +243,8 @@ pub enum StoreError {
     Semver(#[from] semver::Error),
     #[error("content hash decode error: {0}")]
     Hash(String),
+    #[error("migration error: {0}")]
+    Migration(#[from] schema_core::MigrationError),
 }
 
 // ── Shared serialization helpers ────────────────────────────────────────────
@@ -255,9 +257,18 @@ pub(crate) fn encode_build(build: &CharacterBuild) -> Result<String, StoreError>
     Ok(serde_json::to_string(build)?)
 }
 
-/// Decode a `CharacterBuild` from stored JSON.
-pub(crate) fn decode_build(json: &str) -> Result<CharacterBuild, StoreError> {
-    Ok(serde_json::from_str(json)?)
+/// Decode a `CharacterBuild` from a JSON `Value`, migrating it from the given
+/// schema version to the current version if needed (§9.3 lazy on-read). The
+/// store reads each snapshot's original `schema_version` column and passes it
+/// here; if the version is older than `CURRENT_SCHEMA_VERSION`, the
+/// `MigrationRegistry` chains registered migrations before deserialization.
+pub(crate) fn decode_build_from_value(
+    value: serde_json::Value,
+    from: &semver::Version,
+) -> Result<CharacterBuild, StoreError> {
+    let registry = schema_core::MigrationRegistry::default();
+    let migrated = registry.migrate_to_current(from, value)?;
+    Ok(serde_json::from_value(migrated)?)
 }
 
 /// JSON-encode a `SnapshotOrigin` for storage.

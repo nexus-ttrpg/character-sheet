@@ -139,7 +139,7 @@ async fn cmd_import(
     if character_id.is_none() {
         let meta = CharacterMeta {
             id: char_id.clone(),
-            schema_version: semver::Version::new(0, 1, 0),
+            schema_version: schema_core::CURRENT_SCHEMA_VERSION.clone(),
             system: SystemId::new("pf2e"),
             owner_id: owner_id.clone(),
             display_name: build.identity.name.clone(),

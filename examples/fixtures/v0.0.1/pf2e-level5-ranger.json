@@ -1,0 +1,281 @@
+{
+  "identity": {
+    "characterName": "Thalia Greenleaf",
+    "playerName": "Carol",
+    "pronouns": "she/her"
+  },
+  "ancestry": {
+    "reference": {
+      "slug": "elf",
+      "source": "Player Core"
+    }
+  },
+  "heritage": {
+    "reference": {
+      "slug": "woodland-elf",
+      "source": "Player Core"
+    }
+  },
+  "background": {
+    "reference": {
+      "slug": "hunter",
+      "source": "Player Core"
+    }
+  },
+  "class": {
+    "reference": {
+      "slug": "ranger",
+      "source": "Player Core"
+    },
+    "keyAbility": "dex",
+    "hpPerLevel": 8
+  },
+  "level": 5,
+  "abilityScores": {
+    "dex": {
+      "boosts": [
+        {
+          "source": "ancestry"
+        },
+        {
+          "source": "class"
+        },
+        {
+          "source": "free"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "wis": {
+      "boosts": [
+        {
+          "source": "background"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "con": {
+      "boosts": [
+        {
+          "source": "free"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "str": {
+      "boosts": [
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    }
+  },
+  "skills": {
+    "survival": {
+      "rank": "expert",
+      "itemBonus": 0
+    },
+    "stealth": {
+      "rank": "trained",
+      "itemBonus": 0
+    },
+    "athletics": {
+      "rank": "trained",
+      "itemBonus": 0
+    },
+    "nature": {
+      "rank": "trained",
+      "itemBonus": 0
+    },
+    "lore:tracking": {
+      "rank": "trained",
+      "lore": "Tracking",
+      "itemBonus": 0
+    }
+  },
+  "proficiencies": {
+    "perception": "expert",
+    "fortitude": "trained",
+    "reflex": "expert",
+    "will": "trained",
+    "class-dc": "trained"
+  },
+  "feats": [
+    {
+      "reference": {
+        "slug": "hunt-prey",
+        "source": "Player Core"
+      },
+      "category": "class",
+      "level": 1
+    },
+    {
+      "reference": {
+        "slug": "animal-companion",
+        "source": "Player Core"
+      },
+      "category": "class",
+      "level": 1
+    },
+    {
+      "reference": {
+        "slug": "companions-bound",
+        "source": "Player Core"
+      },
+      "category": "class",
+      "level": 2
+    },
+    {
+      "reference": {
+        "slug": "mature-animal-companion",
+        "source": "Player Core"
+      },
+      "category": "class",
+      "level": 4
+    }
+  ],
+  "classFeatures": [
+    {
+      "reference": {
+        "slug": "hunt-prey",
+        "source": "Player Core"
+      },
+      "level": 1
+    },
+    {
+      "reference": {
+        "slug": "ranger-feat",
+        "source": "Player Core"
+      },
+      "level": 3
+    },
+    {
+      "reference": {
+        "slug": "ability-boosts",
+        "source": "Player Core"
+      },
+      "level": 5
+    }
+  ],
+  "equipment": {
+    "weapons": [
+      {
+        "reference": {
+          "slug": "longbow",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      },
+      {
+        "reference": {
+          "slug": "shortsword",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      }
+    ],
+    "armor": [
+      {
+        "reference": {
+          "slug": "leather-armor",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      }
+    ],
+    "inventory": [
+      {
+        "reference": {
+          "slug": "arrows",
+          "source": "Player Core"
+        },
+        "quantity": 20
+      },
+      {
+        "reference": {
+          "slug": "healers-tools",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      },
+      {
+        "reference": {
+          "slug": "bedroll",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      }
+    ]
+  },
+  "currencies": {
+    "gp": 15,
+    "sp": 5
+  },
+  "spellcasting": {
+    "entries": []
+  },
+  "actions": [
+    {
+      "reference": {
+        "slug": "hunt-prey",
+        "source": "Player Core"
+      },
+      "actionType": "single"
+    },
+    {
+      "reference": {
+        "slug": "command-an-animal",
+        "source": "Player Core"
+      },
+      "actionType": "single"
+    }
+  ],
+  "reactions": [],
+  "explorationActivities": [
+    {
+      "reference": {
+        "slug": "scout",
+        "source": "Player Core"
+      }
+    }
+  ],
+  "companions": [
+    {
+      "reference": {
+        "slug": "wolf-companion",
+        "source": "Player Core"
+      },
+      "companionType": "animal"
+    }
+  ],
+  "familiars": [
+    {
+      "reference": {
+        "slug": "fey-familiar",
+        "source": "Player Core"
+      }
+    }
+  ],
+  "drones": [],
+  "vehicles": [],
+  "notes": [
+    {
+      "title": "Wolf Companion: Shadow",
+      "body": "Mature animal companion. HP 45. Speed 35. Bite +14 (1d8+4 piercing)."
+    }
+  ]
+}

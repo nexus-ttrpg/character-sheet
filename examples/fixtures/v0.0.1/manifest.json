@@ -1,0 +1,35 @@
+{
+  "$comment": "v0.0.1 fixtures — identical to the v0.1.0 fixtures except identity.name is serialized as identity.characterName. Used by the migration test matrix (§16, §9.3) to prove the lazy v0.0.1→v0.1.0 migration path. A v0.0.1 fixture will NOT deserialize into the current CharacterBuild without migration (deny_unknown_fields rejects characterName, and name is required).",
+  "version": "0.0.1",
+  "schemaVersion": "0.0.1",
+  "fixtures": [
+    {
+      "file": "pf2e-level1-fighter.json",
+      "system": "pf2e",
+      "tier": "fresh",
+      "level": 1,
+      "description": "Fresh level 1 human fighter — v0.0.1 format (identity.characterName)"
+    },
+    {
+      "file": "pf2e-level10-wizard.json",
+      "system": "pf2e",
+      "tier": "complex",
+      "level": 10,
+      "description": "Level 10 elf wizard — v0.0.1 format (identity.characterName)"
+    },
+    {
+      "file": "pf2e-level5-ranger.json",
+      "system": "pf2e",
+      "tier": "companion-heavy",
+      "level": 5,
+      "description": "Level 5 elf ranger — v0.0.1 format (identity.characterName)"
+    },
+    {
+      "file": "sf2e-level5-mechanic.json",
+      "system": "sf2e",
+      "tier": "drone-heavy",
+      "level": 5,
+      "description": "Level 5 human mechanic — v0.0.1 format (identity.characterName)"
+    }
+  ]
+}

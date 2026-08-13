@@ -1,0 +1,278 @@
+{
+  "identity": {
+    "characterName": "Vex Quark",
+    "playerName": "Dave",
+    "pronouns": "they/them"
+  },
+  "ancestry": {
+    "reference": {
+      "slug": "human",
+      "source": "Starfinder Player Core"
+    }
+  },
+  "heritage": {
+    "reference": {
+      "slug": "cyberborn",
+      "source": "Starfinder Player Core"
+    }
+  },
+  "background": {
+    "reference": {
+      "slug": "technician",
+      "source": "Starfinder Player Core"
+    }
+  },
+  "class": {
+    "reference": {
+      "slug": "mechanic",
+      "source": "Starfinder Player Core"
+    },
+    "keyAbility": "int",
+    "hpPerLevel": 6
+  },
+  "level": 5,
+  "abilityScores": {
+    "int": {
+      "boosts": [
+        {
+          "source": "ancestry"
+        },
+        {
+          "source": "class"
+        },
+        {
+          "source": "free"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "dex": {
+      "boosts": [
+        {
+          "source": "background"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "con": {
+      "boosts": [
+        {
+          "source": "free"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "wis": {
+      "boosts": [
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    }
+  },
+  "skills": {
+    "computers": {
+      "rank": "expert",
+      "itemBonus": 0
+    },
+    "engineering": {
+      "rank": "expert",
+      "itemBonus": 0
+    },
+    "mysticism": {
+      "rank": "trained",
+      "itemBonus": 0
+    },
+    "piloting": {
+      "rank": "trained",
+      "itemBonus": 0
+    },
+    "lore:drone-engineering": {
+      "rank": "expert",
+      "lore": "Drone Engineering",
+      "itemBonus": 0
+    }
+  },
+  "proficiencies": {
+    "perception": "trained",
+    "fortitude": "trained",
+    "reflex": "expert",
+    "will": "trained",
+    "class-dc": "trained"
+  },
+  "feats": [
+    {
+      "reference": {
+        "slug": "drone-mechanic",
+        "source": "Starfinder Player Core"
+      },
+      "category": "class",
+      "level": 1
+    },
+    {
+      "reference": {
+        "slug": "enhanced-mechanic",
+        "source": "Starfinder Player Core"
+      },
+      "category": "class",
+      "level": 2
+    },
+    {
+      "reference": {
+        "slug": "improved-drone",
+        "source": "Starfinder Player Core"
+      },
+      "category": "class",
+      "level": 4
+    }
+  ],
+  "classFeatures": [
+    {
+      "reference": {
+        "slug": "artificial-intelligence",
+        "source": "Starfinder Player Core"
+      },
+      "level": 1
+    },
+    {
+      "reference": {
+        "slug": "mechanic-trick",
+        "source": "Starfinder Player Core"
+      },
+      "level": 3
+    },
+    {
+      "reference": {
+        "slug": "ability-boosts",
+        "source": "Starfinder Player Core"
+      },
+      "level": 5
+    }
+  ],
+  "equipment": {
+    "weapons": [
+      {
+        "reference": {
+          "slug": "laser-pistol",
+          "source": "Starfinder Player Core"
+        },
+        "quantity": 1
+      }
+    ],
+    "armor": [
+      {
+        "reference": {
+          "slug": "light-armor",
+          "source": "Starfinder Player Core"
+        },
+        "quantity": 1
+      }
+    ],
+    "inventory": [
+      {
+        "reference": {
+          "slug": "engineers-toolkit",
+          "source": "Starfinder Player Core"
+        },
+        "quantity": 1
+      },
+      {
+        "reference": {
+          "slug": "battery-pack",
+          "source": "Starfinder Player Core"
+        },
+        "quantity": 5
+      }
+    ]
+  },
+  "currencies": {
+    "credits": 500,
+    "upb": 50
+  },
+  "spellcasting": {
+    "entries": []
+  },
+  "actions": [
+    {
+      "reference": {
+        "slug": "overcharge",
+        "source": "Starfinder Player Core"
+      },
+      "actionType": "single"
+    },
+    {
+      "reference": {
+        "slug": "command-drone",
+        "source": "Starfinder Player Core"
+      },
+      "actionType": "single"
+    }
+  ],
+  "reactions": [],
+  "explorationActivities": [
+    {
+      "reference": {
+        "slug": "scan-area",
+        "source": "Starfinder Player Core"
+      }
+    }
+  ],
+  "companions": [],
+  "familiars": [],
+  "drones": [
+    {
+      "reference": {
+        "slug": "combat-drone",
+        "source": "Starfinder Player Core"
+      },
+      "chassis": "combat",
+      "mods": [
+        {
+          "slug": "weapon-mount",
+          "source": "Starfinder Player Core"
+        },
+        {
+          "slug": "armor-plating",
+          "source": "Starfinder Player Core"
+        },
+        {
+          "slug": "manipulator-arm",
+          "source": "Starfinder Player Core"
+        }
+      ]
+    }
+  ],
+  "vehicles": [
+    {
+      "reference": {
+        "slug": "hover-bike",
+        "source": "Starfinder Player Core"
+      },
+      "role": "pilot"
+    }
+  ],
+  "notes": [
+    {
+      "title": "Drone: R0-N1",
+      "body": "Combat chassis. AC 18. HP 30. Speed 30. Laser rifle +8 (1d8 fire)."
+    },
+    {
+      "title": "Resolve Points",
+      "body": "3/3 remaining. Key ability: Intelligence."
+    }
+  ]
+}

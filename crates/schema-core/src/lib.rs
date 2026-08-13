@@ -35,6 +35,7 @@ pub mod character;
 pub mod chassis;
 pub mod extensions;
 pub mod hashing;
+pub mod migration;
 pub mod newtypes;
 pub mod plugin;
 pub mod proficiency;
@@ -47,6 +48,7 @@ pub use build_types::*;
 pub use character::{Character, CharacterBuild, CharacterMeta};
 pub use extensions::{ExtensionBag, Namespace};
 pub use hashing::content_hash;
+pub use migration::{Migration, MigrationError, MigrationRegistry, CURRENT_SCHEMA_VERSION};
 pub use newtypes::{
     AdapterId, ContentHash, FieldPath, Level, PlatformId, SkillKey, SlotKey, SystemId, Ulid,
 };

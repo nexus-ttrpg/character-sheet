@@ -1,0 +1,154 @@
+{
+  "identity": {
+    "characterName": "Aldric Ashford",
+    "playerName": "Alice",
+    "pronouns": "he/him"
+  },
+  "ancestry": {
+    "reference": {
+      "slug": "human",
+      "source": "Player Core"
+    }
+  },
+  "heritage": {
+    "reference": {
+      "slug": "half-elf",
+      "source": "Player Core"
+    }
+  },
+  "background": {
+    "reference": {
+      "slug": "guard",
+      "source": "Player Core"
+    }
+  },
+  "class": {
+    "reference": {
+      "slug": "fighter",
+      "source": "Player Core"
+    },
+    "keyAbility": "str",
+    "hpPerLevel": 10
+  },
+  "level": 1,
+  "abilityScores": {
+    "str": {
+      "boosts": [
+        {
+          "source": "ancestry"
+        },
+        {
+          "source": "class"
+        },
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "dex": {
+      "boosts": [
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "con": {
+      "boosts": [
+        {
+          "source": "free"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    },
+    "wis": {
+      "boosts": [
+        {
+          "source": "background"
+        }
+      ],
+      "flaws": [],
+      "itemBonus": 0
+    }
+  },
+  "skills": {
+    "athletics": {
+      "rank": "trained",
+      "itemBonus": 0
+    }
+  },
+  "proficiencies": {
+    "perception": "trained",
+    "fortitude": "trained",
+    "reflex": "trained",
+    "will": "trained",
+    "class-dc": "trained"
+  },
+  "feats": [
+    {
+      "reference": {
+        "slug": "power-attack",
+        "source": "Player Core"
+      },
+      "category": "class",
+      "level": 1
+    }
+  ],
+  "classFeatures": [
+    {
+      "reference": {
+        "slug": "fighter-weapon-expertise",
+        "source": "Player Core"
+      },
+      "level": 1
+    }
+  ],
+  "equipment": {
+    "weapons": [
+      {
+        "reference": {
+          "slug": "longsword",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      }
+    ],
+    "armor": [
+      {
+        "reference": {
+          "slug": "chain-mail",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      }
+    ],
+    "inventory": [
+      {
+        "reference": {
+          "slug": "healers-tools",
+          "source": "Player Core"
+        },
+        "quantity": 1
+      }
+    ]
+  },
+  "currencies": {
+    "gp": 5,
+    "sp": 10
+  },
+  "spellcasting": {
+    "entries": []
+  },
+  "actions": [],
+  "reactions": [],
+  "explorationActivities": [],
+  "companions": [],
+  "familiars": [],
+  "drones": [],
+  "vehicles": [],
+  "notes": []
+}

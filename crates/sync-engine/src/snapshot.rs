@@ -144,6 +144,34 @@ impl Snapshot {
             created_by,
         }
     }
+
+    /// Construct a migration snapshot (§9.3). Records a snapshot carrying the
+    /// migrated content — produced by the optional compaction pass that
+    /// persists a lazily-migrated build back to the store. `from` is the
+    /// schema version the build was migrated from.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_migration(
+        id: Ulid,
+        character_id: Ulid,
+        parent: Option<Ulid>,
+        build: CharacterBuild,
+        from: semver::Version,
+        created_at: DateTime<Utc>,
+        created_by: Ulid,
+    ) -> Self {
+        let content_hash = schema_core::content_hash(&build);
+        Self {
+            id,
+            character_id,
+            parent,
+            merge_parent: None,
+            build,
+            content_hash,
+            origin: SnapshotOrigin::Migration { from },
+            created_at,
+            created_by,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -205,5 +233,22 @@ mod tests {
         assert!(
             matches!(snap.origin, SnapshotOrigin::Rollback { to } if to == ulid("01J8Z3FAK1M3P5Q7R9S1T3U5VB"))
         );
+    }
+
+    #[test]
+    fn migration_snapshot_carries_from_version() {
+        let snap = Snapshot::new_migration(
+            ulid("01J8Z3F9K2N4Q6R8S0T2V4W6XB"),
+            ulid("01J8Z3FAK1M3P5Q7R9S1T3U5V7"),
+            Some(ulid("01J8Z3FAK1M3P5Q7R9S1T3U5V8")),
+            minimal_build(),
+            semver::Version::new(0, 0, 1),
+            DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
+            ulid("01J8Z3FAK1M3P5Q7R9S1T3U5VD"),
+        );
+        assert!(
+            matches!(snap.origin, SnapshotOrigin::Migration { from } if from == semver::Version::new(0, 0, 1))
+        );
+        assert_eq!(snap.merge_parent, None);
     }
 }
