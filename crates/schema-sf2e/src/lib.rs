@@ -101,6 +101,18 @@ mod tests {
     }
 
     #[test]
+    fn content_index_has_sf2e_ancestries() {
+        let plugin = Sf2ePlugin::new();
+        let idx = plugin.content_index();
+        for slug in ["human", "kasatha", "lashunta", "shirren", "android", "vesk"] {
+            assert!(
+                idx.get(&schema_core::Slug::new(slug)).is_some(),
+                "content index should have ancestry '{slug}'"
+            );
+        }
+    }
+
+    #[test]
     fn validate_accepts_minimal_build() {
         // `minimal_build()` is a PF2e-flavoured fighter, but it exercises the
         // shared chassis — the SF2e plugin validates it through the same rules.
@@ -110,6 +122,86 @@ mod tests {
             report.is_valid(),
             "minimal build should be valid, got: {:?}",
             report.errors
+        );
+    }
+
+    #[test]
+    fn validate_sf2e_fixture_is_valid() {
+        let json = include_str!("../../../examples/fixtures/sf2e-level5-mechanic.json");
+        let build: CharacterBuild = serde_json::from_str(json).unwrap();
+        let plugin = Sf2ePlugin::new();
+        let report = plugin.validate(&build);
+        assert!(
+            report.is_valid(),
+            "sf2e-level5-mechanic should be valid, got errors: {:?}",
+            report.errors
+        );
+    }
+
+    #[test]
+    fn validate_drone_without_chassis_is_warning() {
+        let mut build = minimal_build();
+        build.drones.push(schema_core::build_types::DroneEntry {
+            reference: schema_core::SystemRefId::from_slug("test-drone"),
+            chassis: None,
+            mods: vec![],
+        });
+        let plugin = Sf2ePlugin::new();
+        let report = plugin.validate(&build);
+        assert!(report.is_valid(), "drone without chassis should not be an error");
+        assert!(
+            report.warnings.iter().any(|w| w.message.contains("chassis")),
+            "should warn about missing chassis: {:?}",
+            report.warnings
+        );
+    }
+
+    #[test]
+    fn validate_drone_mod_empty_slug_is_error() {
+        let mut build = minimal_build();
+        build.drones.push(schema_core::build_types::DroneEntry {
+            reference: schema_core::SystemRefId::from_slug("test-drone"),
+            chassis: Some("combat".into()),
+            mods: vec![schema_core::SystemRefId::from_slug("")],
+        });
+        let plugin = Sf2ePlugin::new();
+        let report = plugin.validate(&build);
+        assert!(
+            !report.is_valid(),
+            "drone mod with empty slug should be an error"
+        );
+    }
+
+    #[test]
+    fn validate_crossover_currencies_is_warning() {
+        let mut build = minimal_build();
+        build.currencies.gp = Some(50);
+        build.currencies.credits = Some(100);
+        let plugin = Sf2ePlugin::new();
+        let report = plugin.validate(&build);
+        assert!(report.is_valid(), "crossover currencies should not be an error");
+        assert!(
+            report
+                .warnings
+                .iter()
+                .any(|w| w.message.contains("crossover")),
+            "should warn about crossover currencies: {:?}",
+            report.warnings
+        );
+    }
+
+    #[test]
+    fn validate_sf2e_fixture_has_no_crossover_warning() {
+        let json = include_str!("../../../examples/fixtures/sf2e-level5-mechanic.json");
+        let build: CharacterBuild = serde_json::from_str(json).unwrap();
+        let plugin = Sf2ePlugin::new();
+        let report = plugin.validate(&build);
+        assert!(
+            !report
+                .warnings
+                .iter()
+                .any(|w| w.message.contains("crossover")),
+            "SF2e fixture should not trigger crossover currency warning"
         );
     }
 

@@ -523,7 +523,7 @@ function vehicleToItem(vehicle: CharacterBuild["vehicles"][number]): FoundryItem
  * Items are grouped by type: feats, weapons, armor, inventory, spells,
  * spellcasting entries, actions, reactions, exploration activities, notes.
  */
-export function exportActor(build: CharacterBuild, _system: FoundrySystemId): FoundryActor {
+export function exportActor(build: CharacterBuild, system: FoundrySystemId): FoundryActor {
   return {
     name: build.identity.name,
     type: "character",

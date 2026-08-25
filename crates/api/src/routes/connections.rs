@@ -14,7 +14,7 @@ use axum::Json;
 use chrono::Utc;
 use secrecy::ExposeSecret;
 
-use schema_core::{content_hash, testing::minimal_build, CharacterBuild, SystemId};
+use schema_core::{content_hash, testing::minimal_build, CharacterBuild};
 use store::{new_ulid, parse_ulid, ConnectionRecord};
 use sync_engine::{apply_merge, merge, merge::Resolution, merge_preview_to_json, Snapshot};
 
@@ -185,6 +185,14 @@ pub async fn pull(
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("connection {conn_id} not found")))?;
 
+    // Get the character's system (SF2e characters need system="sf2e" for the adapter).
+    let char_row = state
+        .store
+        .get_character(&cid)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("character {id} not found")))?;
+    let system = char_row.system;
+
     // 2. Get HEAD (ours).
     let head = state
         .store
@@ -204,7 +212,7 @@ pub async fn pull(
             state.adapters_dir.clone(),
             conn.adapter_id.as_str().into(),
             payload,
-            SystemId::new("pf2e"),
+            system,
             credentials,
         )
         .await?;
@@ -369,6 +377,13 @@ pub async fn push(
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("connection {conn_id} not found")))?;
 
+    let char_row = state
+        .store
+        .get_character(&cid)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("character {id} not found")))?;
+    let system = char_row.system;
+
     let head = state
         .store
         .get_head_snapshot(&cid)
@@ -384,7 +399,7 @@ pub async fn push(
         state.adapters_dir.clone(),
         conn.adapter_id.as_str().into(),
         build_json,
-        SystemId::new("pf2e"),
+        system,
         credentials,
     )
     .await?;
@@ -423,6 +438,13 @@ pub async fn connection_diff(
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("connection {conn_id} not found")))?;
 
+    let char_row = state
+        .store
+        .get_character(&cid)
+        .await?
+        .ok_or_else(|| ApiError::NotFound(format!("character {id} not found")))?;
+    let system = char_row.system;
+
     let head = state
         .store
         .get_head_snapshot(&cid)
@@ -441,7 +463,7 @@ pub async fn connection_diff(
             state.adapters_dir.clone(),
             conn.adapter_id.as_str().into(),
             payload,
-            SystemId::new("pf2e"),
+            system,
             credentials,
         )
         .await?;

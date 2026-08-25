@@ -135,12 +135,12 @@ export const foundryAdapter: CharacterAdapter<FoundryActor> = {
 
   async export(
     build: CharacterBuild,
-    _ctx: ExportContext,
+    ctx: ExportContext,
   ): Promise<ExportOutcome<FoundryActor>> {
     const warnings: AdapterWarning[] = [];
     const skipped: string[] = [];
 
-    const system: FoundrySystemId = "pf2e";
+    const system: FoundrySystemId = ctx.system === "sf2e" ? "sf2e" : "pf2e";
     const actor = exportActor(build, system);
 
     return { payload: actor, warnings, skipped };
