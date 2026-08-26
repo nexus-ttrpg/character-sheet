@@ -138,19 +138,14 @@ pub async fn delete_connection(
     let conn_ulid = parse_ulid(&conn_id)
         .ok_or_else(|| ApiError::BadRequest(format!("invalid connection ULID: {conn_id}")))?;
 
-    // The store trait doesn't have delete_connection yet — for now, this is a
-    // no-op ack. TODO: add delete_connection to the Store trait.
+    // Verify the connection exists (→ 404 if not) before deleting.
     let _ = state
         .store
         .get_connection(&conn_ulid, &state.encryption_key)
         .await?
         .ok_or_else(|| ApiError::NotFound(format!("connection {conn_id} not found")))?;
 
-    // Note: Store::delete_connection is not yet implemented in the trait.
-    // When it lands, call it here. For now, return 204 as a soft ack.
-    tracing::warn!(
-        "delete_connection not yet implemented in Store trait — returning 204 without deleting"
-    );
+    state.store.delete_connection(&conn_ulid).await?;
 
     Ok(axum::http::StatusCode::NO_CONTENT)
 }

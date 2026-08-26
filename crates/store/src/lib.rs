@@ -240,6 +240,10 @@ pub trait Store: Send + Sync {
         snapshot_id: &Ulid,
     ) -> Result<(), StoreError>;
 
+    /// Delete a connection by id. Returns `true` if a row was deleted, `false`
+    /// if the connection did not exist. Credentials are removed with the row.
+    async fn delete_connection(&self, id: &Ulid) -> Result<bool, StoreError>;
+
     // ── API keys (§17) ──────────────────────────────────────────────────────
 
     /// Store an API key record. The `key_hash` is an Argon2 PHC string — the

@@ -580,6 +580,14 @@ impl Store for PgStore {
         Ok(())
     }
 
+    async fn delete_connection(&self, id: &Ulid) -> Result<bool, StoreError> {
+        let result = sqlx::query("DELETE FROM connections WHERE id = $1")
+            .bind(id.as_str())
+            .execute(&self.pool)
+            .await?;
+        Ok(result.rows_affected() > 0)
+    }
+
     // ── API keys (§17) ──────────────────────────────────────────────────────
 
     async fn put_api_key(&self, record: &ApiKeyRecord) -> Result<(), StoreError> {
