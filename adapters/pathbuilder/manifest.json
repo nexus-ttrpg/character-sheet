@@ -1,0 +1,11 @@
+{
+  "$comment": "Adapter manifest — capability grants (§5.5). Pathbuilder may fetch share-code exports from pathbuilder2e.com; the allowlist scopes that fetch op. runtime inProcess = deno_core V8 sandbox (§5.5).",
+  "id": "pathbuilder",
+  "entry": "./dist/bundle/bundle.js",
+  "runtime": "inProcess",
+  "capabilities": {
+    "fetch": {
+      "allow": ["https://pathbuilder2e.com"]
+    }
+  }
+}

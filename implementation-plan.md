@@ -1,6 +1,6 @@
 # Nexus Sheet — Implementation Plan
 
-**Status:** Phase 2 in progress. Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2.1 (Axum API) ✅, Phase 2.2 (Roll20 adapter) ✅, Phase 2.3 (Foundry relay module) ✅, Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) ✅. 288 tests passing (132 Rust + 156 TS).
+**Status:** Phase 3 complete (MVP gate met). Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2 (Axum API, Roll20, Foundry relay, SF2e) ✅, Phase 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) ✅. 418 tests passing (210 Rust + 208 TS).
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
 
 The four load-bearing invariants from the proposal are non-negotiable and every task below defers to them: (1) the language boundary — Rust core, TS adapters, and a contributor writing an adapter never installs Rust (§0.1); (2) `sync-engine` is pure and I/O-free (§1, §11.3); (3) one-way codegen from Rust types toward the less-expressive TS target, with committed output and a CI staleness check (§3.6); (4) conflicts are never auto-resolved and rollback is `revert`, not `reset --hard` (§11.3, §11.4).

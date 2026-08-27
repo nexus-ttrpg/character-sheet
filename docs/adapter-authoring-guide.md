@@ -332,7 +332,7 @@ test files in subdirectories (AGENTS.md pitfall).
 
 ## Reference adapters
 
-Two adapters ship in-repo as worked examples:
+Three adapters ship in-repo as worked examples:
 
 - **`adapters/foundry/`** — the reference. Server-side adapter + in-browser relay
   module. Uses `foundry-mapping` for the Actor ↔ canonical logic. Covers PF2e +
@@ -342,6 +342,17 @@ Two adapters ship in-repo as worked examples:
   repeating sections. Uses a declarative mapping table. Shows lossy export
   warnings (Roll20 stores only derived ability scores, not boosts/flaws). 48
   tests.
+
+- **`adapters/pathbuilder/`** — the first **third-party-builder** adapter (§8),
+  and the **import-only** example. Pathbuilder 2e is a character builder, not a
+  VTT: it exports JSON but has no write-back API, so `supportsExport: false` (the
+  engine won't push to it; `export()` is still implemented for manual re-import
+  + the round-trip contract). Shows the **non-lossy** ability-score path: because
+  Pathbuilder recomputes the final number itself, canonical's boosts/flaws/itemBonus
+  components round-trip exactly (§197) — contrast with Roll20's lossy path above.
+  Ships a `manifest.json` scoping fetch to `https://pathbuilder2e.com` (§5.5).
+  20 tests. Its field names are a representative model of §8, not verified
+  against a real export — see its README.
 
 - **`examples/example-adapter/`** — the minimal template. Generic JSON platform,
   6 canonical paths, 18 contract tests. Start here.
