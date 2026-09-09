@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Nexus Sheet** — a cross-VTT (Virtual Tabletop) character synchronization platform for PF2e / SF2e. "Git for TTRPG characters": a canonical character model and a diff/merge engine sitting between platform adapters. Adapters are disposable; the canonical model and the merge engine are the asset.
 
-**Status:** Phase 3 complete (MVP gate met). Phases 0 (foundations), 1 (adapter boundary, GO decision in ADR 0001), 2 (Axum API, Roll20, Foundry relay, SF2e), and 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) are complete. 380 tests passing (200 Rust + 180 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
+**Status:** Phase 3 complete (MVP gate met). Phases 0 (foundations), 1 (adapter boundary, GO decision in ADR 0001), 2 (Axum API, Roll20, Foundry relay, SF2e), and 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) are complete. Post-MVP work in progress: the Pathbuilder adapter (first third-party-builder, import-only — §8) and the `packages/web` conflict UI. 438 tests passing (210 Rust + 228 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
 
 The architecture proposal lives in `cross-vtt-sync-architecture.md` (~1090 lines) and remains the canonical design reference. ADRs in `docs/adr/` supersede specific choices as the project evolves (the proposal's closing line).
 
@@ -27,7 +27,7 @@ Every section answers the guiding principle from §0: *"Does this make it easier
 
 ## Tech stack (§14)
 
-Rust core: Axum, SQLx (PostgreSQL hosted + SQLite offline CLI, one codebase), serde/schemars/garde, utoipa (OpenAPI), `deno_core` (embeds V8 to run TS adapters in-process, no Node on server), BLAKE3 content hashing, `cargo-deny`/`cargo-audit`. TS side: TypeScript + pnpm + Vitest + tsup. Narrow `wasm-bindgen` use only for the browser-side diff preview (Phase 3). Two workspaces side by side (Cargo + pnpm); Turborepo deliberately not used.
+Rust core: Axum, SQLx (PostgreSQL hosted + SQLite offline CLI, one codebase), serde/schemars/garde, utoipa (OpenAPI), `deno_core` (embeds V8 to run TS adapters in-process, no Node on server), BLAKE3 content hashing, `cargo-deny`/`cargo-audit`. TS side: TypeScript + pnpm + Vitest, adapter/web bundles via esbuild. Narrow `wasm-bindgen` use only for the browser-side diff preview (Phase 3). Two workspaces side by side (Cargo + pnpm); Turborepo deliberately not used.
 
 ## Repo layout (§15)
 
@@ -37,6 +37,7 @@ crates/
   schema-pf2e/     PF2e SystemPlugin (extends schema-core; delegates to shared chassis)
   schema-sf2e/     SF2e SystemPlugin — drones, Resolve Points, credits/UPB (§3.4; delegates to shared chassis)
   sync-engine/     Pure diff/merge/DAG (no I/O, no adapter deps — Cargo-enforced)
+  sync-engine-wasm/ cdylib wrapper over sync-engine — the ONLY wasm-bindgen use (§14); powers the web diff preview
   store/           SQLx Postgres + SQLite, AES-256-GCM credential encryption
   adapter-host/    deno_core V8 sandbox, boundary validation, capability enforcement
   api/             Axum REST API, utoipa OpenAPI, webhooks (Phase 2.1 — COMPLETE)
@@ -45,13 +46,15 @@ packages/
   schema-zod/      GENERATED — do not hand-edit
   adapter-sdk/     CharacterAdapter interface, contract test harness
   foundry-mapping/ PF2e Actor ↔ canonical mapping logic
+  web/             Conflict UI — History / Diff / Merge Lab views, client-side WASM diff (Phase 3.1)
 adapters/
-  foundry/         Reference adapter (39 tests, esbuild bundle)
+  foundry/         Reference adapter (39 adapter + 78 relay module tests, esbuild bundle)
   roll20/          Second adapter — flat attrs, repeating sections, asleep sandbox (48 tests)
+  pathbuilder/     First third-party-builder adapter — import-only (§8), non-lossy ability-score components (20 tests)
 cli/               `nexus` — Rust, clap, single static binary (import/push/diff/history)
 xtask/             cargo xtask codegen | openapi | fixtures
 examples/          fixtures/ (shared JSON ground-truth), example-adapter/ (Phase 3)
-docs/              ADRs
+docs/              ADRs, adapter-authoring guide, self-hosting
 ```
 
 The one boundary that matters: `sync-engine` depends on `schema-core` and nothing else — enforced by Cargo, so violating it is a compile error. A contributor adding an adapter works entirely inside `adapters/` and `packages/`, runs `pnpm test`, and never opens `crates/`.
@@ -61,10 +64,11 @@ The one boundary that matters: `sync-engine` depends on `schema-core` and nothin
 ### Rust
 
 ```
-cargo test                              # all crates
+cargo test                              # all crates (210 tests)
 cargo test -p sync-engine               # merge engine + proptest laws
-cargo test -p api                       # API unit + integration tests
-cargo test -p adapter-host              # boundary tests (19) + unit tests (14)
+cargo test -p api                       # API unit + integration tests (43)
+cargo test -p adapter-host              # 31 tests: 17 boundary + 14 unit
+cargo test -p sync-engine-wasm          # WASM wrapper + native-parity checks (7)
 cargo clippy --workspace --tests        # lint
 cargo fmt --check                       # format check
 cargo xtask codegen && git diff --exit-code  # codegen staleness check (§3.6)
@@ -75,10 +79,11 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 
 ```
 pnpm install                            # install all workspace deps
-pnpm test                               # all packages + adapters
-pnpm test --filter @nexus-sheet/foundry # Foundry adapter (39 tests)
-pnpm test --filter @nexus-sheet/roll20  # Roll20 adapter (48 tests)
-pnpm test --filter @nexus-sheet/adapter-sdk  # SDK + contract harness (19 tests)
+pnpm test                               # all packages + adapters (228 tests)
+pnpm test --filter @nexus-sheet/foundry-adapter      # Foundry adapter + relay module (117 tests)
+pnpm test --filter @nexus-sheet/roll20-adapter       # Roll20 adapter (48 tests)
+pnpm test --filter @nexus-sheet/pathbuilder-adapter  # Pathbuilder adapter (20 tests)
+pnpm test --filter @nexus-sheet/adapter-sdk          # SDK + contract harness (19 tests)
 ```
 
 In an adapter directory: `pnpm test` — plain Vitest, no host, no DB, no network (adapters are stateless, §5.4). If a contributor ever needs `cargo` to iterate on an adapter, that's a bug in the SDK.
@@ -99,9 +104,16 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
   The app runtime is pinned to Node 22 (`.nvmrc` + `package.json` `engines`
   `>=22`) — never lower it to 20, and never hardcode `node-version: 20` in a
   workflow (use `node-version-file: '.nvmrc'`, as the existing workflows do).
-  Known straggler: `pnpm/action-setup@v4` still targets node20 internally (the
-  latest major available) — GitHub force-runs it on Node 24 with a deprecation
-  warning; bump to a node24 build / v5 when one ships.
+  All workflow actions are on node24 runtimes: `actions/checkout@v5`,
+  `actions/setup-node@v5`, `pnpm/action-setup@v6` (v6 was the fix for the old
+  `@v4` node20 straggler). `pnpm/action-setup` takes no `version:` input — it
+  reads `packageManager` from `package.json` (`pnpm@11.21.0`); passing `version:`
+  alongside that field makes it error.
+- **Rust toolchain in CI is pinned to `1.97`.** Every job uses
+  `dtolnay/rust-toolchain@1.97` (not `@stable`) so it installs 1.97.1 directly
+  instead of installing a baseline stable that `rust-toolchain.toml` then makes
+  cargo re-sync away from. `cargo-deny-action` gets the same via its
+  `rust-version: "1.97.1"` input.
 - **`cargo audit` vs `cargo-deny`.** Both run in `.github/workflows/audit.yml`
   (§17) and they differ: cargo-audit scans the whole `Cargo.lock` regardless of
   enabled features (so resolved-but-uncompiled crates still flag), cargo-deny
@@ -126,17 +138,17 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
 
 - `adapter-host`: `deno_core` V8 sandbox, tiny op surface (`nexus_fetch` + `nexus_log`), boundary validation (`deny_unknown_fields`), capability enforcement (allowlisted fetch only), timeout/panic containment, `"runtime": "external"` escape hatch.
 - `adapter-sdk`: `CharacterAdapter<TPlatform>` interface, `runContractTests(adapter, fixtures)` one-line harness, `canonicalPath()` typed helper.
-- `adapters/foundry`: reference adapter — identity, ancestry, class, level, abilities, skills, feats, equipment, spellcasting. 29 tests, esbuild bundle. `packages/foundry-mapping` shared mapping logic.
+- `adapters/foundry`: reference adapter — identity, ancestry, class, level, abilities, skills, feats, equipment, spellcasting. 39 adapter tests, esbuild bundle. `packages/foundry-mapping` shared mapping logic.
 - `cli/`: `nexus import|push|diff|history` — SQLite local store, 6 integration tests.
 
 **Phase 1 gate: GO.** The cross-language maintenance cost is measurable and bounded (~25 lines of V8 scope/promise code, `LocalSet` at call sites, esbuild bundle step). The sync-engine's purity, property-testability, and structural boundary enforcement earn their keep. See `docs/adr/0001-phase1-go-no-go-rust-ts-split.md`.
 
-### Phase 2 — API + second adapter (IN PROGRESS)
+### Phase 2 — API + second adapter ✅ COMPLETE
 
 - **2.1 Axum API ✅ COMPLETE** — `crates/api`: character CRUD with PATCH optimistic locking (`expectedContentHash` → 409), connections (incl. `DELETE`) + `pull`/`push`/`diff`/`drift`, history + rollback (revert semantics), HMAC-signed webhooks, utoipa OpenAPI at `/v1/openapi.json`. API key auth middleware (`crates/api/src/auth.rs`): `nsk_live_…` Bearer tokens, Argon2id-hashed at rest (PHC format), TTL-cached validation, three scopes (`read_only`/`sync`/`admin`) enforced per-method (401 on missing/invalid/malformed key, 403 on scope mismatch; `DELETE` requires Admin). Per-key token-bucket rate limiting (read 100/min, write 30/min, 429 + `Retry-After`), in-memory for Phase 2 (Redis deferred to the multi-instance hosted stretch goal, §20). `drift` returns `Unavailable { reason: SandboxNotRunning }` for Roll20 (§6.2). 43 tests (19 unit + 24 integration: `auth_flow` 16, `conflict_flow` 2 incl. full create → divergent edit → pull 409+mergePreview → resolve → verify DAG, `connections` 3, `e2e_gate`/`e2e_sf2e`/`postgres_integration` 1 each — Postgres via testcontainers, skips gracefully without Docker).
 - **2.2 Roll20 adapter ✅ COMPLETE** — `adapters/roll20`: the structurally harder second adapter, proving the `CharacterAdapter` trait generalizes beyond Foundry. Declarative `ROLL20_PF2E_MAP` mapping table (§6.3) with `canonicalPath()` compile-time path checking and derived `fieldCoverage`. Logic-free collector script (`collector/nexus-collector.js`, ~150 lines, §6.5) — reads attrs verbatim, POSTs signed, writes verbatim, re-announces on sandbox start. Repeating rows matched by content fingerprint, not row id (§6.4). Lossy ability scores (value round-trips, components don't — §5.2). `validate()` checks `sheet_version` and throws `UnsupportedSheetVersion` (§6.4). 48 tests (contract harness + Roll20-specific: sheet_version validation, fingerprint matching, lossy ability scores, detectChanges, round-trip).
-- **2.3 Foundry relay module ✅ COMPLETE** — `adapters/foundry/module/`: in-browser Foundry VTT module that shares `foundry-mapping` by plain import (§7.1 — "it's an import statement, not a WASM bridge"). Registers authenticated local HTTP endpoints (`GET /nexus/actors`, `GET /nexus/actors/:id`, `POST /nexus/actors/:id/apply`, `GET /nexus/drift`) using a per-world `nsk_relay_` API key (constant-time validated). Hooks `createActor`/`updateActor` for drift telemetry — never auto-syncs (§4), just marks actors dirty. `applyActor` writes max HP only (§7.2); current HP is session state. The pure logic (drift tracker, endpoint handlers, API key validation) is tested with mock Foundry API implementations — no real Foundry needed. 50 relay tests (89 foundry total: 39 adapter + 50 relay). Bundled by esbuild to a single self-contained ESM file (`module/nexus-sheet-relay.js`) loaded via `module.json`.
-- **2.4 SF2e system plugin + Foundry SF2e coverage ✅ COMPLETE** — `crates/schema-sf2e`: `Sf2ePlugin` implementing `SystemPlugin` (id `sf2e`, validate, derived_stats, content_index). The SF2e struct shapes (drones, `resolve_points` in session, credits/UPB, vehicles) already lived in `schema-core` as shared chassis (§3.4); this plugin adds the SF2e content index and delegates validation/derived-stats to the shared chassis. 8 tests (6 unit + 2 fixture). Foundry SF2e coverage in `packages/foundry-mapping`: drones (chassis + mods) and vehicles (role) now map to/from Foundry items (`"drone"`/`"vehicle"` item types), round-tripped through the contract harness against the SF2e mechanic fixture. Credits/UPB were already mapped; Resolve Points are session state (§4) and never written (like current HP). 10 new Foundry adapter tests (39 total). The shared PF2e/SF2e chassis logic (ability scores, HP, perception/saves/class DC, cross-field validation) was extracted into `schema-core::chassis` so both plugins share one implementation rather than drifting.
+- **2.3 Foundry relay module ✅ COMPLETE** — `adapters/foundry/module/`: in-browser Foundry VTT module that shares `foundry-mapping` by plain import (§7.1 — "it's an import statement, not a WASM bridge"). Registers authenticated local HTTP endpoints (`GET /nexus/actors`, `GET /nexus/actors/:id`, `POST /nexus/actors/:id/apply`, `GET /nexus/drift`) using a per-world `nsk_relay_` API key (constant-time validated). Hooks `createActor`/`updateActor` for drift telemetry — never auto-syncs (§4), just marks actors dirty. `applyActor` writes max HP only (§7.2); current HP is session state. The pure logic (drift tracker, endpoint handlers, API key validation) is tested with mock Foundry API implementations — no real Foundry needed. 78 relay tests — `relay.test.ts` 50, `node-http-server.test.ts` 21, `full-loop.test.ts` 7 (117 foundry total: 39 adapter + 78 relay). Bundled by esbuild to a single self-contained ESM file (`module/nexus-sheet-relay.js`) loaded via `module.json`.
+- **2.4 SF2e system plugin + Foundry SF2e coverage ✅ COMPLETE** — `crates/schema-sf2e`: `Sf2ePlugin` implementing `SystemPlugin` (id `sf2e`, validate, derived_stats, content_index). The SF2e struct shapes (drones, `resolve_points` in session, credits/UPB, vehicles) already lived in `schema-core` as shared chassis (§3.4); this plugin adds the SF2e content index and delegates validation/derived-stats to the shared chassis. 14 tests (12 unit + 2 fixture). Foundry SF2e coverage in `packages/foundry-mapping`: drones (chassis + mods) and vehicles (role) now map to/from Foundry items (`"drone"`/`"vehicle"` item types), round-tripped through the contract harness against the SF2e mechanic fixture. Credits/UPB were already mapped; Resolve Points are session state (§4) and never written (like current HP). 10 new Foundry adapter tests (39 total). The shared PF2e/SF2e chassis logic (ability scores, HP, perception/saves/class DC, cross-field validation) was extracted into `schema-core::chassis` so both plugins share one implementation rather than drifting.
 
 ### Phase 3 — Conflict UX + hardening ✅ COMPLETE
 
@@ -150,6 +162,12 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
 The §19 done criteria:
 1. **Foundry→canonical→Foundry divergent merge ✅** — `crates/api/tests/e2e_gate.rs`: creates a character from the real PF2e fixture, pushes to Foundry via `adapter.export`, pulls back via `adapter.import` (sets `last_sync`), PATCHs `identity.name` (world A), modifies the Foundry actor's `name` (world B, same canonical field), pulls → 409 conflict, resolves (theirs), pushes merged build back to Foundry, verifies the actor carries the resolved name, verifies the snapshot DAG (≥3 snapshots, last is a merge).
 2. **Adapter-authoring guide ✅** — `docs/adapter-authoring-guide.md` + `examples/example-adapter/` (3.4 above).
+
+### Post-MVP — community-style adapters (in progress)
+
+Third-party-builder adapters were explicitly out of MVP scope (§19, §20) — "left as the first community contributions." Started anyway as a real exercise of the adapter on-ramp:
+
+- **Pathbuilder 2e adapter ✅ (with a caveat)** — `adapters/pathbuilder/`: the first third-party-*builder* adapter (§8). Import-only — Pathbuilder has no write-back API, so `capabilities.supportsExport` is `false` and the engine never offers a push; `export()` still renders re-importable JSON to satisfy the round-trip contract test. Non-lossy ability scores: because the canonical model stores components (boosts/flaws/itemBonus) and Pathbuilder recomputes the final number itself, `export → import` preserves components exactly — unlike the lossy Roll20 path. `manifest.json` scopes `fetch` to `https://pathbuilder2e.com` (§5.5). 20 tests (contract harness + non-lossy component round-trip). **Caveat:** the field names in `src/mapping.ts` are a representative shape modelled on the architecture doc, *not verified against a real Pathbuilder 2e export* — the contract tests prove import/export symmetry, not real-format fidelity. Needs a real export + remap before importing live data; the canary job (§3.3) is the drift-detection mechanism.
 
 ## MVP sequencing (§19)
 

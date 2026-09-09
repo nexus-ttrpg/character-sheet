@@ -13,7 +13,7 @@ implemented: it renders a Pathbuilder JSON a user can re-import by hand, and it
 satisfies the round-trip contract test. Most third-party builders are import
 sources, not export targets (§8).
 
-## Non-lossy ability scores (§197)
+## Non-lossy ability scores (§3.3)
 
 Unlike the Roll20 adapter (which stores only the derived number and loses
 boosts/flaws), Pathbuilder recomputes the final ability number itself — and
@@ -24,7 +24,7 @@ round-trip here is **non-lossy**: `boosts`, `flaws`, and `itemBonus` survive
 ## ⚠️ Format fidelity caveat
 
 The field names in `src/mapping.ts` are a **representative** Pathbuilder JSON
-shape modelled on §8 and §197 — they are **not verified against a real
+shape modelled on §8 and §3.3 — they are **not verified against a real
 Pathbuilder 2e export**. The contract tests validate import/export *symmetry*
 (round-trip), not real-format fidelity. Before importing live Pathbuilder data,
 remap these field names against a real export; the canary job (§3.3) is the

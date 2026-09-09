@@ -40,7 +40,7 @@ describe("pathbuilder: capabilities (§8)", () => {
     expect(pathbuilderAdapter.id).toBe("pathbuilder");
   });
 });
-describe("pathbuilder: ability scores round-trip non-lossy (§197)", () => {
+describe("pathbuilder: ability scores round-trip non-lossy (§3.3)", () => {
   for (const [name, build] of [
     ["fighter", fighter],
     ["ranger", ranger],

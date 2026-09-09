@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Embeds deno_core to run TS adapters in-process, sandboxed, with capability enforcement and boundary validation (§5.5)."
+publish = false
 
 [dependencies]
 schema-core.workspace = true

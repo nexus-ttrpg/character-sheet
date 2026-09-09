@@ -142,7 +142,11 @@ fn map_connection(row: PgRow, key: &EncryptionKey) -> Result<ConnectionRecord, S
 #[async_trait]
 impl Store for PgStore {
     async fn migrate(&self) -> Result<(), StoreError> {
-        sqlx::query(
+        // `raw_sql` (not `query`) — this is a multi-statement DDL batch, which
+        // Postgres only accepts over the simple-query protocol. `sqlx::query`
+        // uses the extended (prepared-statement) protocol, which rejects it with
+        // "cannot insert multiple commands into a prepared statement" (42601).
+        sqlx::raw_sql(
             r#"
             CREATE TABLE IF NOT EXISTS characters (
                 id               TEXT PRIMARY KEY,

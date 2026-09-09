@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "WebAssembly bindings for sync-engine — browser-side diff preview (Phase 3.1 spike)."
+publish = false
 
 [lib]
 # `cdylib` for the wasm artifact; `rlib` so `cargo test`/`cargo clippy` can

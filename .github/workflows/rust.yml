@@ -14,7 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      # Pinned to match rust-toolchain.toml (1.97.1) — avoids installing a
+      # baseline stable that cargo then re-syncs away from on first invocation.
+      - uses: dtolnay/rust-toolchain@1.97
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
@@ -45,8 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: pnpm/action-setup@v6
+      - uses: dtolnay/rust-toolchain@1.97
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v5
         with:

@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "SF2e SystemPlugin — drones, Resolve Points, credits/UPB (§3.4). Compiled in; extends schema-core."
+publish = false
 
 [dependencies]
 schema-core.workspace = true

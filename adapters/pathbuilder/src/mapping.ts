@@ -1,16 +1,16 @@
-// Pathbuilder 2e ↔ canonical mapping (§8, §197).
+// Pathbuilder 2e ↔ canonical mapping (§8, §3.3).
 //
 // FORMAT FIDELITY CAVEAT — read this before relying on live imports.
 // The field names below are a *representative* Pathbuilder JSON shape modelled
 // on §8 ("JSON is already close to canonical's shape, so mapping is mostly
-// renaming") and §197 (ability scores carry components, not final numbers).
+// renaming") and §3.3 (ability scores carry components, not final numbers).
 // They are NOT verified against a real Pathbuilder 2e export. The contract
 // tests validate import/export *symmetry* (round-trip), not real-format
 // fidelity. Before importing live Pathbuilder data, remap these field names
 // against a real export; the canary job (§3.3) is the mechanism that catches
 // real-format drift.
 //
-// §197 headline: Pathbuilder recomputes the final ability number itself, and
+// §3.3 headline: Pathbuilder recomputes the final ability number itself, and
 // because canonical stores COMPONENTS (boosts/flaws/itemBonus), the round-trip
 // is NON-lossy here — unlike Roll20, which stores only the derived number and
 // loses the components (§5.2 lossyExport).
@@ -89,7 +89,7 @@ export interface PathbuilderCharacter {
   class: string;
   keyAbility: AbilityScoreKey;
   hpPerLevel: number;
-  /** Ability boosts as COMPONENTS (§197) — keyed by ability. */
+  /** Ability boosts as COMPONENTS (§3.3) — keyed by ability. */
   abilityBoosts: Partial<Record<AbilityScoreKey, AbilityBoostSource[]>>;
   abilityFlaws: Partial<Record<AbilityScoreKey, AbilityBoostSource[]>>;
   abilityItemBonus: Partial<Record<AbilityScoreKey, number>>;
@@ -120,7 +120,7 @@ export const PATHBUILDER_TOP_KEYS = new Set<string>([
 // Declared at the granularity each field actually round-trips. Lineage slugs
 // are declared at the `.reference.slug` sub-path (source is dropped there);
 // ability scores are declared per-ability because their COMPONENTS round-trip
-// non-lossily (§197) — the contract tests backstop presence, and the
+// non-lossily (§3.3) — the contract tests backstop presence, and the
 // pathbuilder-specific tests assert the component-level equality.
 
 export const PATHBUILDER_FIELD_COVERAGE = [
@@ -225,7 +225,7 @@ export function canonicalToPathbuilder(build: CharacterBuild): PathbuilderCharac
  * Map a Pathbuilder export payload to a canonical `PartialBuild`.
  *
  * Assumes a structurally well-formed payload (the adapter's `validate()` gates
- * this). Ability-score components are preserved verbatim — non-lossy (§197).
+ * this). Ability-score components are preserved verbatim — non-lossy (§3.3).
  */
 export function pathbuilderToCanonical(raw: PathbuilderCharacter): PartialBuild {
   const build: PartialBuild = {};
@@ -242,7 +242,7 @@ export function pathbuilderToCanonical(raw: PathbuilderCharacter): PartialBuild 
   };
 
   // Ability scores: reconstruct from components. A key may appear in any of the
-  // three component maps, so union them. Non-lossy (§197).
+  // three component maps, so union them. Non-lossy (§3.3).
   const abilityScores: CharacterBuild["abilityScores"] = {};
   const abilityKeys = new Set<string>([
     ...Object.keys(raw.abilityBoosts),

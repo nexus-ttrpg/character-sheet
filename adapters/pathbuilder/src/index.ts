@@ -61,7 +61,7 @@ export const pathbuilderAdapter: CharacterAdapter<PathbuilderCharacter> = {
   },
   // export: canonical -> Pathbuilder JSON (§8). supportsExport is false, but
   // this is implemented so a user can re-import by hand and the round-trip
-  // contract holds. Non-lossy on ability components (§197).
+  // contract holds. Non-lossy on ability components (§3.3).
 
   async export(
     build: CharacterBuild,

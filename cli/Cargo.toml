@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "`nexus` — offline-first single static binary (§12). clap."
+publish = false
 
 [[bin]]
 name = "nexus"

@@ -9,7 +9,9 @@ Guidance for AI agents (Claude Code, etc.) working in this repository.
 sitting between disposable platform adapters. Rust core, TypeScript adapters.
 
 **Status:** Phase 3 complete (MVP gate met). Phases 0, 1, 2, and 3 are
-complete. 380 tests passing (200 Rust + 180 TS). See `CLAUDE.md` for full
+complete. 438 tests passing (210 Rust + 228 TS). Post-MVP: the Pathbuilder
+adapter (first third-party-builder, import-only) and the `packages/web` conflict
+UI are underway. See `CLAUDE.md` for full
 invariants and status, `implementation-plan.md` for the phased plan,
 `cross-vtt-sync-architecture.md` for the canonical design (§N references
 throughout the code).
@@ -35,10 +37,12 @@ regenerating. Fix it, don't skip it.
 ```
 cargo test -p sync-engine          # merge engine + proptest laws
 cargo test -p api                  # API unit + integration tests
-cargo test -p adapter-host         # boundary (19) + unit (14) tests
+cargo test -p adapter-host         # 31 tests: 17 boundary + 14 unit
 cargo test -p store                # store tests
-pnpm test --filter @nexus-sheet/foundry       # Foundry adapter + relay module (89 tests)
-pnpm test --filter @nexus-sheet/adapter-sdk   # SDK + contract harness (19)
+pnpm test --filter @nexus-sheet/foundry-adapter      # Foundry adapter + relay module (117 tests)
+pnpm test --filter @nexus-sheet/roll20-adapter       # Roll20 adapter (48 tests)
+pnpm test --filter @nexus-sheet/pathbuilder-adapter  # Pathbuilder adapter (20 tests)
+pnpm test --filter @nexus-sheet/adapter-sdk          # SDK + contract harness (19)
 ```
 
 ## Load-bearing invariants — do NOT break these
@@ -83,8 +87,9 @@ pnpm test --filter @nexus-sheet/adapter-sdk   # SDK + contract harness (19)
 crates/         Rust core (the asset)
   schema-core/    SOURCE OF TRUTH — canonical Rust types, BLAKE3 hashing
   schema-pf2e/    PF2e SystemPlugin
-  schema-sf2e/    SF2e SystemPlugin (scaffold)
+  schema-sf2e/    SF2e SystemPlugin (delegates to schema-core::chassis)
   sync-engine/    Pure diff/merge/DAG — depends on schema-core ONLY
+  sync-engine-wasm/  cdylib wrapper over sync-engine — the ONLY wasm-bindgen use; powers the web diff preview
   store/          SQLx Postgres + SQLite, AES-256-GCM credentials
   adapter-host/   deno_core V8 sandbox, boundary validation
   api/            Axum REST API, utoipa OpenAPI, webhooks
@@ -93,14 +98,17 @@ packages/       TS shared (generated + SDK)
   schema-zod/     GENERATED — do not hand-edit
   adapter-sdk/    CharacterAdapter interface, contract test harness
   foundry-mapping/  PF2e Actor ↔ canonical mapping logic
+  web/            Conflict UI — History / Diff / Merge Lab, client-side WASM diff
 adapters/       TS, contributed (disposable)
-  foundry/        Reference adapter + relay module (89 tests)
+  foundry/        Reference adapter + relay module (117 tests)
                   src/       — server-side adapter (adapter-host)
                   module/    — in-browser relay (§7.1: shares foundry-mapping by plain import)
+  roll20/         Second adapter — flat attrs, repeating sections, asleep sandbox (48 tests)
+  pathbuilder/    First third-party-builder adapter — import-only (§8), non-lossy ability components (20 tests)
 cli/            `nexus` — Rust, clap, single static binary
 xtask/          cargo xtask codegen | openapi | fixtures
 examples/       fixtures/ (shared JSON ground-truth), example-adapter/
-docs/           ADRs
+docs/           ADRs, adapter-authoring guide, self-hosting
 ```
 
 ## Common pitfalls

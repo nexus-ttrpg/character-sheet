@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "PF2e SystemPlugin — defines valid PF2e characters and derived stats (§10.2). Compiled in; extends schema-core."
+publish = false
 
 [dependencies]
 schema-core.workspace = true

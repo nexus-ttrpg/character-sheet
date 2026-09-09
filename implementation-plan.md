@@ -1,6 +1,6 @@
 # Nexus Sheet — Implementation Plan
 
-**Status:** Phase 3 complete (MVP gate met). Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2 (Axum API, Roll20, Foundry relay, SF2e) ✅, Phase 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) ✅. 418 tests passing (210 Rust + 208 TS).
+**Status:** Phase 3 complete (MVP gate met). Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2 (Axum API, Roll20, Foundry relay, SF2e) ✅, Phase 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) ✅. 438 tests passing (210 Rust + 228 TS). Post-MVP: the Pathbuilder adapter (first third-party-builder, import-only — §8) and the `packages/web` conflict UI are underway.
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
 
 The four load-bearing invariants from the proposal are non-negotiable and every task below defers to them: (1) the language boundary — Rust core, TS adapters, and a contributor writing an adapter never installs Rust (§0.1); (2) `sync-engine` is pure and I/O-free (§1, §11.3); (3) one-way codegen from Rust types toward the less-expressive TS target, with committed output and a CI staleness check (§3.6); (4) conflicts are never auto-resolved and rollback is `revert`, not `reset --hard` (§11.3, §11.4).
@@ -247,7 +247,7 @@ This is not just a test pass; it is the explicit decision point from §0.2/§19/
 
 ---
 
-## Phase 2 — API + second adapter (weeks 11–16) — IN PROGRESS
+## Phase 2 — API + second adapter (weeks 11–16) ✅ COMPLETE
 
 Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry relay, and SF2e parity.
 
@@ -315,7 +315,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 
 ---
 
-## Phase 3 — Conflict UX + hardening (weeks 17–21)
+## Phase 3 — Conflict UX + hardening (weeks 17–21) ✅ COMPLETE
 
 Goal: a usable conflict-resolution UI, the migration framework exercised for real, security/scale hardening, and the adapter on-ramp that the whole architecture exists to enable.
 
@@ -373,6 +373,30 @@ The §19 done criteria, all met:
 - **Adapter-authoring guide ✅** — `docs/adapter-authoring-guide.md` + `examples/example-adapter/` (3.4). Someone outside the core team can write a working adapter from the guide alone.
 
 Explicitly **not** in the MVP (§19, §20): third-party builder adapters (Pathbuilder/Wanderer's Guide/Demiplane — left as the first community contributions), TS system plugins, the hosted multi-tenant service.
+
+---
+
+## Post-MVP — community-style adapters (in progress)
+
+Not part of the MVP gate; started as a real exercise of the adapter on-ramp the architecture exists to enable.
+
+### P.1 Pathbuilder 2e adapter ✅ (with a format-fidelity caveat)
+
+**Goal:** the first third-party-*builder* adapter (§8) — a PF2e character builder, not a VTT — and the import-only reference.
+
+**Deliverables:**
+- `adapters/pathbuilder/`: `CharacterAdapter` implementation. Import-only — Pathbuilder has no write-back API, so `capabilities.supportsExport` is `false` and the engine never offers a push. `export()` still renders re-importable JSON so the round-trip contract test holds.
+- Non-lossy ability scores: canonical stores components (boosts/flaws/itemBonus), Pathbuilder recomputes the final number itself, so `export → import` preserves components exactly — unlike the lossy Roll20 path (§5.2, §8).
+- `manifest.json` scoping `fetch` to `https://pathbuilder2e.com` (§5.5).
+
+**Verify:** `pnpm test` in `adapters/pathbuilder` — 20 tests (contract harness + non-lossy component round-trip), no Rust, no host.
+
+**Open work — TODO (tabled):**
+- [ ] Obtain a real Pathbuilder 2e export (JSON export or share-code payload from `pathbuilder2e.com`).
+- [ ] Remap the field names in `adapters/pathbuilder/src/mapping.ts` against that real payload — the current names are a *representative* shape modelled on the architecture doc (§8, §3.3), **not verified against a real export**. Contract tests only prove import/export *symmetry*, not real-format fidelity.
+- [ ] Add the real export as a fixture and a real-format import test alongside the round-trip tests.
+- [ ] Confirm the canary job (§3.3) covers Pathbuilder once the mapping is real, so upstream format drift is caught.
+- [ ] Drop the "⚠️ Format fidelity caveat" section from `adapters/pathbuilder/README.md` once the mapping is verified.
 
 ---
 

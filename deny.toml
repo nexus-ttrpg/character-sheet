@@ -2,7 +2,10 @@
 # Tightened over time; deliberately permissive at scaffold stage.
 
 [advisories]
-# Warn on advisories, fail CI only on high/critical for now.
+# cargo-deny fails on any vulnerability / unmaintained / unsound advisory by
+# default; `yanked` is downgraded to a warning. Individual advisories with no
+# safe upgrade path are acknowledged in `ignore` below (keep in sync with
+# audit.toml).
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "warn"
 ignore = [
@@ -13,7 +16,10 @@ ignore = [
 ]
 
 [licenses]
-# Allow common permissive licenses; review on first real dependency addition.
+# Allow common permissive licenses; the list is deliberately broader than the
+# current dependency set (defensive — review on first real dependency addition),
+# so don't warn when an allowed license happens to be unused this run.
+unused-allowed-license = "allow"
 allow = [
     "MIT",
     "Apache-2.0",
@@ -30,9 +36,21 @@ allow = [
 confidence-threshold = 0.8
 
 [bans]
-# Flag duplicate versions; don't hard-fail yet.
+# Duplicate transitive versions: warn only (mostly unavoidable upstream skew).
 multiple-versions = "warn"
-wildcards = "warn"
+# Wildcard version requirements: denied for registry crates, but the internal
+# workspace crates (all `publish = false`) reference each other by versionless
+# path dep, which `allow-wildcard-paths` exempts.
+wildcards = "deny"
+allow-wildcard-paths = true
+
+# `testcontainers` (dev-only — the Postgres integration test) drags in a large,
+# version-skewed transitive tree (bollard, hyper-util, windows-sys x4, syn x2,
+# …). None of it reaches a shipped binary, so exclude its subtree from
+# duplicate-version detection rather than tracking ~15 transient warnings.
+skip-tree = [
+    { crate = "testcontainers", reason = "dev-dependency; transitive version skew never reaches a release artifact" },
+]
 
 [sources]
 # Only crates.io by default; deny unknown registries and git sources.

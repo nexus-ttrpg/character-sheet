@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "SQLx store — snapshot DAG, content hashes, connections. One codebase targeting PostgreSQL (hosted) and SQLite (offline CLI, §12)."
+publish = false
 
 [dependencies]
 schema-core.workspace = true

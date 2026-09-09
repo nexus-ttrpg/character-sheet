@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Axum API — REST, OpenAPI via utoipa (§13). CRUD, connections, push/pull/diff, webhooks, auth."
+publish = false
 
 [[bin]]
 name = "nexus-api"
@@ -45,5 +46,5 @@ tempfile = "3"
 sqlx = { workspace = true, features = ["sqlite"] }
 tower = { workspace = true, features = ["util"] }
 http = "1"
-testcontainers = "0.23"
-testcontainers-modules = { version = "0.11", features = ["postgres"] }
+testcontainers = "0.27"
+testcontainers-modules = { version = "0.15", features = ["postgres"] }

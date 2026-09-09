@@ -14,14 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          # Match the pinned toolchain (rust-toolchain.toml) so the action does
+          # not first install a baseline stable and then re-sync 1.97.1.
+          rust-version: "1.97.1"
 
   cargo-audit:
     name: cargo-audit (§17)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-audit --locked
+      - uses: dtolnay/rust-toolchain@1.97
+      # Prebuilt binary — avoids compiling cargo-audit from source every run.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
       - run: cargo audit
 
   pnpm-audit:
@@ -29,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
