@@ -15,8 +15,8 @@ COPY adapters/ adapters/
 RUN pnpm install --frozen-lockfile
 
 # Build each adapter's bundle (single-file esbuild ESM output)
-RUN pnpm --filter @nexus-sheet/foundry bundle \
- && pnpm --filter @nexus-sheet/roll20 bundle
+RUN pnpm --filter @nexus-sheet/foundry-adapter bundle \
+ && pnpm --filter @nexus-sheet/roll20-adapter bundle
 
 # ── Stage 2: Build the API binary (Rust) ────────────────────────────────────
 FROM rust:1.97-bookworm-slim AS rustbuilder

@@ -104,7 +104,7 @@ export const exampleAdapter: CharacterAdapter<ExamplePlatformPayload> = {
       "explorationActivities", "companions", "familiars", "drones", "vehicles",
       "notes",
     ]) {
-      if ((build as Record<string, unknown>)[field] !== undefined) {
+      if ((build as unknown as Record<string, unknown>)[field] !== undefined) {
         warnings.push({
           path: `build.${field}`,
           kind: { type: "lossyExport", reason: "not covered by example adapter" },

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Nexus Sheet** — a cross-VTT (Virtual Tabletop) character synchronization platform for PF2e / SF2e. "Git for TTRPG characters": a canonical character model and a diff/merge engine sitting between platform adapters. Adapters are disposable; the canonical model and the merge engine are the asset.
 
-**Status:** Phase 3 complete (MVP gate met). Phases 0 (foundations), 1 (adapter boundary, GO decision in ADR 0001), 2 (Axum API, Roll20, Foundry relay, SF2e), and 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) are complete. Post-MVP work in progress: the Pathbuilder adapter (first third-party-builder, import-only — §8) and the `packages/web` conflict UI. 438 tests passing (210 Rust + 228 TS). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
+**Status:** Phase 3 complete (MVP gate met). Phases 0 (foundations), 1 (adapter boundary, GO decision in ADR 0001), 2 (Axum API, Roll20, Foundry relay, SF2e), and 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) are complete. Post-MVP work in progress: the Pathbuilder adapter (first third-party-builder, import-only — §8) and the `packages/web` conflict UI. 432 tests passing (210 Rust + 222 TS; CI runs 217 TS — the 6 `packages/web` WASM-parity tests need `pnpm build:wasm` first and skip otherwise, a placeholder running in their place, §3.1). See `implementation-plan.md` for the phased build plan and `docs/adr/0001-*.md` for the Phase 1 go/no-go decision.
 
 The architecture proposal lives in `cross-vtt-sync-architecture.md` (~1090 lines) and remains the canonical design reference. ADRs in `docs/adr/` supersede specific choices as the project evolves (the proposal's closing line).
 
@@ -79,7 +79,7 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 
 ```
 pnpm install                            # install all workspace deps
-pnpm test                               # all packages + adapters (228 tests)
+pnpm test                               # all packages + adapters (222 w/ WASM built, 217 without)
 pnpm test --filter @nexus-sheet/foundry-adapter      # Foundry adapter + relay module (117 tests)
 pnpm test --filter @nexus-sheet/roll20-adapter       # Roll20 adapter (48 tests)
 pnpm test --filter @nexus-sheet/pathbuilder-adapter  # Pathbuilder adapter (20 tests)
