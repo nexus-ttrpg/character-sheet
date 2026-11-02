@@ -40,16 +40,15 @@ fn validate_drones(build: &CharacterBuild, report: &mut ValidationReport) {
 
         if drone.chassis.is_none() {
             report.push_warning(schema_core::ValidationWarning {
-                path: FieldPath::new(&format!("{base}.chassis")),
-                message: "drone has no chassis type — homebrew or unkeyed drone"
-                    .into(),
+                path: FieldPath::new(format!("{base}.chassis")),
+                message: "drone has no chassis type — homebrew or unkeyed drone".into(),
             });
         }
 
         for (j, m) in drone.mods.iter().enumerate() {
             if m.slug.as_str().is_empty() {
                 report.push_error(schema_core::ValidationError {
-                    path: FieldPath::new(&format!("{base}.mods[{j}].slug")),
+                    path: FieldPath::new(format!("{base}.mods[{j}].slug")),
                     message: "drone mod slug must not be empty".into(),
                 });
             }
@@ -57,7 +56,7 @@ fn validate_drones(build: &CharacterBuild, report: &mut ValidationReport) {
 
         if drone.mods.len() > 5 {
             report.push_warning(schema_core::ValidationWarning {
-                path: FieldPath::new(&format!("{base}.mods")),
+                path: FieldPath::new(format!("{base}.mods")),
                 message: format!(
                     "drone has {} mods — verify against the character's level-based mod cap",
                     drone.mods.len()
@@ -98,9 +97,8 @@ fn validate_vehicles(build: &CharacterBuild, report: &mut ValidationReport) {
     for (i, vehicle) in build.vehicles.iter().enumerate() {
         if vehicle.role.is_none() {
             report.push_warning(schema_core::ValidationWarning {
-                path: FieldPath::new(&format!("build.vehicles[{i}].role")),
-                message: "vehicle has no role — character owns but may not be piloting"
-                    .into(),
+                path: FieldPath::new(format!("build.vehicles[{i}].role")),
+                message: "vehicle has no role — character owns but may not be piloting".into(),
             });
         }
     }

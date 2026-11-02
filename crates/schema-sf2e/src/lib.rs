@@ -148,9 +148,15 @@ mod tests {
         });
         let plugin = Sf2ePlugin::new();
         let report = plugin.validate(&build);
-        assert!(report.is_valid(), "drone without chassis should not be an error");
         assert!(
-            report.warnings.iter().any(|w| w.message.contains("chassis")),
+            report.is_valid(),
+            "drone without chassis should not be an error"
+        );
+        assert!(
+            report
+                .warnings
+                .iter()
+                .any(|w| w.message.contains("chassis")),
             "should warn about missing chassis: {:?}",
             report.warnings
         );
@@ -179,7 +185,10 @@ mod tests {
         build.currencies.credits = Some(100);
         let plugin = Sf2ePlugin::new();
         let report = plugin.validate(&build);
-        assert!(report.is_valid(), "crossover currencies should not be an error");
+        assert!(
+            report.is_valid(),
+            "crossover currencies should not be an error"
+        );
         assert!(
             report
                 .warnings

@@ -30,7 +30,8 @@ use axum::http::{Request, StatusCode};
 use store::{EncryptionKey, SqliteStore, Store};
 use tower::ServiceExt;
 
-type BoxRouter = tower::util::BoxCloneService<Request<Body>, axum::response::Response, std::convert::Infallible>;
+type BoxRouter =
+    tower::util::BoxCloneService<Request<Body>, axum::response::Response, std::convert::Infallible>;
 
 fn workspace_root() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -148,9 +149,7 @@ async fn e2e_sf2e_divergent_merge_on_credits() {
     // ── Step 1: Create SF2e character from the mechanic fixture ──────────
     let build_bytes = tokio::fs::read(mechanic_fixture_path()).await.unwrap();
     let build_json: serde_json::Value = serde_json::from_slice(&build_bytes).unwrap();
-    let original_credits = build_json["currencies"]["credits"]
-        .as_u64()
-        .unwrap();
+    let original_credits = build_json["currencies"]["credits"].as_u64().unwrap();
 
     let (status, resp) = send_json(
         &router,
@@ -263,7 +262,11 @@ async fn e2e_sf2e_divergent_merge_on_credits() {
         &auth,
     )
     .await;
-    assert_eq!(status, StatusCode::OK, "PATCH credits (world A) should succeed");
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "PATCH credits (world A) should succeed"
+    );
 
     // ── Step 6: "World B" edit — modify the Foundry actor's credits ──────
     let world_b_credits = original_credits + 200;
@@ -340,7 +343,11 @@ async fn e2e_sf2e_divergent_merge_on_credits() {
         &auth,
     )
     .await;
-    assert_eq!(status, StatusCode::OK, "push merged should succeed: {push_resp}");
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "push merged should succeed: {push_resp}"
+    );
 
     let merged_actor = &push_resp["payload"];
     assert_eq!(
