@@ -1,8 +1,8 @@
 //! Canonical character model — the source of truth (§3, §3.6).
 //!
 //! These Rust types are the single hand-written definition from which
-//! `canonical.schema.json`, `@nexus-sheet/schema-types`, and
-//! `@nexus-sheet/schema-zod` are generated (one-way codegen, §3.6).
+//! `canonical.schema.json`, `@nexus-ttrpg/schema-types`, and
+//! `@nexus-ttrpg/schema-zod` are generated (one-way codegen, §3.6).
 //!
 //! ## Three-layer validation (§3.1)
 //!

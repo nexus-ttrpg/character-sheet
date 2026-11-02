@@ -4,7 +4,7 @@ Guidance for AI agents (Claude Code, etc.) working in this repository.
 
 ## What this is
 
-**Nexus Sheet** — a cross-VTT character synchronization platform for PF2e / SF2e.
+**Nexus Character Sheet** — a cross-VTT character synchronization platform for PF2e / SF2e.
 "Git for TTRPG characters": a canonical character model + diff/merge engine
 sitting between disposable platform adapters. Rust core, TypeScript adapters.
 
@@ -39,10 +39,10 @@ cargo test -p sync-engine          # merge engine + proptest laws
 cargo test -p api                  # API unit + integration tests
 cargo test -p adapter-host         # 31 tests: 17 boundary + 14 unit
 cargo test -p store                # store tests
-pnpm test --filter @nexus-sheet/foundry-adapter      # Foundry adapter + relay module (117 tests)
-pnpm test --filter @nexus-sheet/roll20-adapter       # Roll20 adapter (48 tests)
-pnpm test --filter @nexus-sheet/pathbuilder-adapter  # Pathbuilder adapter (20 tests)
-pnpm test --filter @nexus-sheet/adapter-sdk          # SDK + contract harness (19)
+pnpm test --filter @nexus-ttrpg/foundry-adapter      # Foundry adapter + relay module (117 tests)
+pnpm test --filter @nexus-ttrpg/roll20-adapter       # Roll20 adapter (48 tests)
+pnpm test --filter @nexus-ttrpg/pathbuilder-adapter  # Pathbuilder adapter (20 tests)
+pnpm test --filter @nexus-ttrpg/adapter-sdk          # SDK + contract harness (19)
 ```
 
 ## Load-bearing invariants — do NOT break these

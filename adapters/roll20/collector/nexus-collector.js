@@ -16,13 +16,13 @@
  *
  * Commands:
  *   !nexus-auth            — handshake: obtain a short-lived signed JWT
- *   !nexus-pull [charId]   — POST raw attribute dump to the Nexus Sheet server
+ *   !nexus-pull [charId]   — POST raw attribute dump to the Nexus Character Sheet server
  *   !nexus-apply [charId]  — write attrs verbatim from the server response
  *
  * Config: replace NEXUS_URL and INSTALL_TOKEN below when connecting a campaign.
  */
 
-const NEXUS_URL = "https://api.nexus-sheet.example/v1";
+const NEXUS_URL = "https://api.nexus-character-sheet.example/v1";
 const INSTALL_TOKEN = "REPLACE_WITH_YOUR_INSTALL_TOKEN"; // per-campaign (§6.5)
 
 const COLLECTOR_VERSION = "1.0.0";
@@ -177,7 +177,7 @@ on("chat:message", function (msg) {
 on("ready", function () {
   if (INSTALL_TOKEN === "REPLACE_WITH_YOUR_INSTALL_TOKEN") {
     sendChat("Nexus", "/w gm nexus-collector.js loaded but not configured. " +
-      "Set INSTALL_TOKEN (from your Nexus Sheet campaign settings).");
+      "Set INSTALL_TOKEN (from your Nexus Character Sheet campaign settings).");
     return;
   }
   nexusPost("/roll20/announce", {

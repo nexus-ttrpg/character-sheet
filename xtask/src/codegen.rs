@@ -8,8 +8,8 @@
 //!         ▼
 //!   canonical.schema.json            ← published artifact, committed
 //!         │
-//!         ├─► json2ts                ─► @nexus-sheet/schema-types  (TS types)
-//!         └─► json-schema-to-zod     ─► @nexus-sheet/schema-zod   (runtime validation)
+//!         ├─► json2ts                ─► @nexus-ttrpg/schema-types  (TS types)
+//!         └─► json-schema-to-zod     ─► @nexus-ttrpg/schema-zod   (runtime validation)
 //! ```
 //!
 //! Run via `cargo xtask codegen`. The generated output is **committed to the
@@ -134,7 +134,7 @@ fn normalize_refs(value: &mut serde_json::Value) {
     }
 }
 
-// ── Step 2: canonical.schema.json → @nexus-sheet/schema-types ──────────────
+// ── Step 2: canonical.schema.json → @nexus-ttrpg/schema-types ──────────────
 
 fn generate_types() -> bool {
     eprintln!("codegen: generating {TYPES_PATH} via json2ts");
@@ -170,7 +170,7 @@ fn generate_types() -> bool {
     }
 }
 
-// ── Step 3: canonical.schema.json → @nexus-sheet/schema-zod ────────────────
+// ── Step 3: canonical.schema.json → @nexus-ttrpg/schema-zod ────────────────
 //
 // `json-schema-to-zod` doesn't resolve internal `$ref`s — its README
 // recommends piping through `json-refs` first. We inline `$ref`s in Rust

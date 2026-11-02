@@ -1,4 +1,4 @@
-// @nexus-sheet/foundry-mapping — Actor↔canonical mapping, written once (§7.1).
+// @nexus-ttrpg/foundry-mapping — Actor↔canonical mapping, written once (§7.1).
 //
 // Shared by plain import between adapters/foundry (server-side) and the
 // foundry relay module (in-browser). The clearest concrete win from the
@@ -19,7 +19,7 @@ import type {
   AbilityBoostSource,
   ActionType,
   Character,
-} from "@nexus-sheet/schema-types";
+} from "@nexus-ttrpg/schema-types";
 
 // ── Foundry platform types ───────────────────────────────────────────────────
 //
@@ -120,7 +120,7 @@ export interface FoundryItem {
   };
   uuid?: string | null;
   flags?: {
-    "nexus-sheet"?: {
+    "nexus-character-sheet"?: {
       homebrew?: boolean;
       inlinedFallback?: boolean;
     };
@@ -143,7 +143,7 @@ export type {
   AbilityBoostSource,
   ActionType,
   Character,
-} from "@nexus-sheet/schema-types";
+} from "@nexus-ttrpg/schema-types";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

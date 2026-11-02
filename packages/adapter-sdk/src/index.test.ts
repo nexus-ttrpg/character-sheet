@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { runContractTests, type AdapterFixture } from "./testing.js";
 import type { CharacterAdapter, ImportOutcome, ExportOutcome, ChangeSet, ValidationReport } from "./index.js";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 
 // ── Mock adapter for self-testing the contract harness ───────────────────────
 //

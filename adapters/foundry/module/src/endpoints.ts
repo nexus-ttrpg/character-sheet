@@ -13,8 +13,8 @@
 // §4:   drift hooks never auto-sync — they just maintain telemetry.
 // §7.7: homebrew is never an error — unknown items are warnings.
 
-import { exportActor, importActor, type FoundryActor, type FoundrySystemId } from "@nexus-sheet/foundry-mapping";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+import { exportActor, importActor, type FoundryActor, type FoundrySystemId } from "@nexus-ttrpg/foundry-mapping";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 import type { FoundryGame, RelayRequest, RelayResponse, RelayHttpServer } from "./types.js";
 import { validateAuthHeader } from "./settings.js";
 import type { DriftTracker } from "./drift.js";

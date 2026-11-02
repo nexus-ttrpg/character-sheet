@@ -100,7 +100,7 @@ use crate::state::AppState;
         error::ErrorBody,
     )),
     info(
-        title = "Nexus Sheet API",
+        title = "Nexus Character Sheet API",
         version = "0.1.0",
         description = "Cross-VTT character synchronization (§13). REST; OpenAPI generated from Rust types via utoipa.",
     )

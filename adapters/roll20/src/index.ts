@@ -1,4 +1,4 @@
-// @nexus-sheet/roll20-adapter — the structurally harder second adapter (§6, §21).
+// @nexus-ttrpg/roll20-adapter — the structurally harder second adapter (§6, §21).
 //
 // Roll20 sheets store data as flat Attribute rows keyed by name
 // (`strength_score`, `repeating_skills_-abc123_skill_name`), plus repeating
@@ -21,14 +21,14 @@ import type {
   ImportContext,
   ExportContext,
   AdapterWarning,
-} from "@nexus-sheet/adapter-sdk";
-import { AdapterError } from "@nexus-sheet/adapter-sdk";
+} from "@nexus-ttrpg/adapter-sdk";
+import { AdapterError } from "@nexus-ttrpg/adapter-sdk";
 import type {
   CharacterBuild,
   AbilityScoreKey,
   AbilityScoreEntry,
   ProficiencyRank,
-} from "@nexus-sheet/schema-types";
+} from "@nexus-ttrpg/schema-types";
 import {
   ROLL20_PF2E_MAP,
   ROLL20_FIELD_COVERAGE,

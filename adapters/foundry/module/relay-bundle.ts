@@ -8,8 +8,8 @@
 // the relay glue code — a single self-contained JS file with no npm imports,
 // ready to drop into a Foundry modules directory.
 //
-// Build: pnpm --filter @nexus-sheet/foundry-adapter bundle:relay
-// Output: module/nexus-sheet-relay.js
+// Build: pnpm --filter @nexus-ttrpg/foundry-adapter bundle:relay
+// Output: module/nexus-character-sheet.js
 
 import { initPhase, readyPhase } from "./src/relay.js";
 import type { FoundryHooks } from "./src/types.js";

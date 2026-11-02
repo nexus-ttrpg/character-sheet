@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/pathbuilder-adapter",
+  "name": "@nexus-ttrpg/pathbuilder-adapter",
   "version": "0.1.0",
   "private": true,
   "description": "Pathbuilder 2e adapter — the first third-party-builder (import-only) adapter (§8, §19 Phase 3 stretch). Demonstrates non-lossy ability-score component round-trip (§3.3), unlike the lossy Roll20 path.",
@@ -19,8 +19,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexus-sheet/adapter-sdk": "workspace:*",
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/adapter-sdk": "workspace:*",
+    "@nexus-ttrpg/schema-types": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.27.0"

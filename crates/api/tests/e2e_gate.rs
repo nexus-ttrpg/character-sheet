@@ -25,7 +25,7 @@
 //! 10. Verify the snapshot DAG has ≥3 snapshots, last one is a merge.
 //!
 //! **Prerequisite:** the Foundry adapter bundle must be pre-built:
-//!   `pnpm --filter @nexus-sheet/foundry-adapter bundle`
+//!   `pnpm --filter @nexus-ttrpg/foundry-adapter bundle`
 //! The test skips gracefully if the bundle is absent.
 
 use std::sync::Arc;
@@ -62,7 +62,7 @@ async fn setup_temp_adapters() -> (tempfile::TempDir, std::path::PathBuf) {
     let bundle = adapter_bundle_path();
     assert!(
         bundle.exists(),
-        "adapter bundle not found at {} — run `pnpm --filter @nexus-sheet/foundry-adapter bundle` first",
+        "adapter bundle not found at {} — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` first",
         bundle.display()
     );
     let tmp = tempfile::tempdir().unwrap();
@@ -130,7 +130,7 @@ async fn send_get(router: &BoxRouter, uri: &str, auth: &str) -> (StatusCode, ser
 async fn e2e_foundry_divergent_merge_gate() {
     // Skip if the adapter bundle hasn't been built.
     if !adapter_bundle_path().exists() {
-        eprintln!("skip: adapter bundle not built — run `pnpm --filter @nexus-sheet/foundry-adapter bundle`");
+        eprintln!("skip: adapter bundle not built — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle`");
         return;
     }
 

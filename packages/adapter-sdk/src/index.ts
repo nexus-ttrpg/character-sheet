@@ -1,4 +1,4 @@
-// @nexus-sheet/adapter-sdk — the contribution surface (§5).
+// @nexus-ttrpg/adapter-sdk — the contribution surface (§5).
 //
 // The CharacterAdapter interface, contexts, warnings/errors, AdapterCapabilities
 // with static fieldCoverage, and the contract test harness.
@@ -6,7 +6,7 @@
 // canonicalPath() is the template-literal type helper that makes a typo in a
 // field mapping a compile-time error, not a silently-skipped field (§6.3, §3.6).
 
-import type { Character, CharacterBuild } from "@nexus-sheet/schema-types";
+import type { Character, CharacterBuild } from "@nexus-ttrpg/schema-types";
 
 // ── canonicalPath() — compile-time-checked canonical field paths (§6.3) ──────
 //
@@ -47,7 +47,7 @@ export type CanonicalPath = Paths<Character>;
  * committing (§3.6, §6.3).
  *
  * ```ts
- * import { canonicalPath } from "@nexus-sheet/adapter-sdk";
+ * import { canonicalPath } from "@nexus-ttrpg/adapter-sdk";
  * const map = [
  *   { path: canonicalPath("build.identity.name"), target: { kind: "attr", name: "character_name" } },
  *   { path: canonicalPath("build.level"),         target: { kind: "attr", name: "level" } },
@@ -228,7 +228,7 @@ export interface AdapterCapabilities {
  * The interface community contributors implement (§5.1).
  *
  * ```ts
- * import type { CharacterAdapter } from "@nexus-sheet/adapter-sdk";
+ * import type { CharacterAdapter } from "@nexus-ttrpg/adapter-sdk";
  *
  * const myAdapter: CharacterAdapter<MyPlatformPayload> = {
  *   id: "my-platform",

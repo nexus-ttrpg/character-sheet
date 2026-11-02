@@ -54,7 +54,7 @@ async fn setup_temp_adapters() -> (tempfile::TempDir, std::path::PathBuf) {
     let bundle = adapter_bundle_path();
     assert!(
         bundle.exists(),
-        "adapter bundle not found at {} — run `pnpm --filter @nexus-sheet/foundry-adapter bundle` first",
+        "adapter bundle not found at {} — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` first",
         bundle.display()
     );
     let tmp = tempfile::tempdir().unwrap();
@@ -121,7 +121,7 @@ async fn send_get(router: &BoxRouter, uri: &str, auth: &str) -> (StatusCode, ser
 #[tokio::test]
 async fn e2e_sf2e_divergent_merge_on_credits() {
     if !adapter_bundle_path().exists() {
-        eprintln!("skip: adapter bundle not built — run `pnpm --filter @nexus-sheet/foundry-adapter bundle`");
+        eprintln!("skip: adapter bundle not built — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle`");
         return;
     }
 

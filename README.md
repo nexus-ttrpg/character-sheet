@@ -1,42 +1,50 @@
-# Nexus Sheet — A Cross-VTT Character Synchronization Platform for PF2e / SF2e
+# Nexus Character Sheet — A Cross-VTT Character Synchronization Platform for PF2e / SF2e
 
 "Git for TTRPG characters": a canonical character model and a diff/merge engine
 sitting between platform adapters. Adapters are disposable; the canonical model
 and the merge engine are the asset.
 
-**Status:** Phase 2 in progress. Phase 0 (foundations), Phase 1 (adapter
-boundary — GO decision in [ADR 0001](./docs/adr/0001-phase1-go-no-go-rust-ts-split.md)),
-Phase 2.1 (Axum API), Phase 2.2 (Roll20 adapter), Phase 2.3 (Foundry relay
-module), and Phase 2.4 (SF2e system plugin + Foundry SF2e coverage) are
-complete. 288 tests passing (132 Rust + 156 TS). See
+Part of [nexus-ttrpg](https://github.com/nexus-ttrpg). Formerly *Nexus Sheet*.
+
+**Status:** MVP complete (Phase 3 gate met), with post-MVP work in progress.
+Phases 0 (foundations), 1 (adapter boundary, GO decision in
+[ADR 0001](./docs/adr/0001-phase1-go-no-go-rust-ts-split.md)), 2 (Axum API,
+Roll20 adapter, Foundry relay module, SF2e) and 3 (conflict UI, WASM diff
+preview, migration framework, hardening, adapter-authoring guide) are done.
+432 tests (210 Rust + 222 TS; CI runs 217 TS, because 6 WASM-parity tests in
+`packages/web` need `pnpm build:wasm` first). See
 [`implementation-plan.md`](./implementation-plan.md) for the phased build plan
 and [`cross-vtt-sync-architecture.md`](./cross-vtt-sync-architecture.md) for
-the full design (~1090 lines).
+the full design.
 
 ## What's built
 
-| Component | Status | Tests | Description |
-|-----------|--------|-------|-------------|
-| `crates/schema-core` | ✅ Complete | 30 | Canonical Rust types, BLAKE3 hashing, `schemars` JsonSchema, shared chassis (validate/derived) |
-| `crates/schema-pf2e` | ✅ Complete | 13 | PF2e SystemPlugin extending schema-core |
-| `crates/schema-sf2e` | ✅ Complete | 8 | SF2e SystemPlugin — drones, Resolve Points, credits/UPB (§3.4) |
-| `crates/sync-engine` | ✅ Complete | 15 | Pure diff/merge/DAG, proptest laws, rollback-as-revert |
-| `crates/store` | ✅ Complete | 8 | SQLx Postgres + SQLite, AES-256-GCM credential encryption |
-| `crates/adapter-host` | ✅ Complete | 33 | `deno_core` V8 sandbox, boundary validation, capability enforcement |
-| `crates/api` | ✅ Complete | 10 | Axum REST API, utoipa OpenAPI, webhooks (Phase 2.1) |
-| `cli/` | ✅ Complete | 6 | `nexus import\|push\|diff\|history` — single static binary |
-| `packages/adapter-sdk` | ✅ Complete | 19 | `CharacterAdapter` interface, contract test harness |
-| `packages/foundry-mapping` | ✅ Complete | — | PF2e/SF2e Actor ↔ canonical mapping logic (drones, vehicles, credits/UPB) |
-| `adapters/foundry` | ✅ Complete | 89 | Reference adapter (39) + relay module (50): in-browser Actor↔canonical via shared `foundry-mapping` (§7.1) |
-| `adapters/roll20` | ✅ Complete | 48 | Second adapter — flat attrs, repeating sections, asleep sandbox (§6) |
-| `packages/schema-types` | ✅ Generated | — | TS types from `canonical.schema.json` |
-| `packages/schema-zod` | ✅ Generated | — | Zod schemas from `canonical.schema.json` |
+| Component | Status | Description |
+|-----------|--------|-------------|
+| `crates/schema-core` | ✅ | Canonical Rust types, BLAKE3 hashing, `schemars` JsonSchema, shared PF2e/SF2e chassis, migrations |
+| `crates/schema-pf2e` | ✅ | PF2e SystemPlugin |
+| `crates/schema-sf2e` | ✅ | SF2e SystemPlugin: drones, Resolve Points, credits/UPB |
+| `crates/sync-engine` | ✅ | Pure diff/merge/snapshot DAG, proptest laws, rollback as revert |
+| `crates/sync-engine-wasm` | ✅ | WASM build of the engine for the browser diff preview |
+| `crates/store` | ✅ | SQLx Postgres + SQLite, AES-256-GCM credential encryption, migration on read |
+| `crates/adapter-host` | ✅ | `deno_core` V8 sandbox, boundary validation, capability enforcement |
+| `crates/api` | ✅ | Axum REST API, utoipa OpenAPI, API keys, rate limiting, webhooks |
+| `cli/` | ✅ | `nexus import\|push\|diff\|history`, single static binary |
+| `packages/adapter-sdk` | ✅ | `CharacterAdapter` interface, contract test harness |
+| `packages/foundry-mapping` | ✅ | PF2e/SF2e Actor ↔ canonical mapping, shared by adapter and relay module |
+| `packages/web` | ✅ | Conflict UI: history, diff and merge views, client-side WASM diff |
+| `adapters/foundry` | ✅ | Reference adapter + in-browser relay module (`nexus-character-sheet`) |
+| `adapters/roll20` | ✅ | Second adapter: flat attributes, repeating sections, sandboxed collector |
+| `adapters/pathbuilder` | ⚠️ Experimental | Import-only. Field names are modelled on the design doc and **not yet verified against a real Pathbuilder 2e export**; don't use it on live data yet |
+| `packages/schema-types`, `packages/schema-zod` | Generated | TS types and Zod schemas from `canonical.schema.json` |
 
 ## Contributing an adapter
 
 A contributor adding an adapter works entirely inside `adapters/` and `packages/`,
 runs `pnpm test`, and never opens `crates/`. **A contributor writing a new
-adapter never installs Rust.** Their loop is `npm install`, `npm test`, open a PR.
+adapter never installs Rust.** Start from
+[`docs/adapter-authoring-guide.md`](./docs/adapter-authoring-guide.md) and
+`examples/example-adapter/`.
 
 The one boundary that matters: `crates/sync-engine` depends on `schema-core` and
 nothing else — enforced by Cargo, so violating it is a compile error.
@@ -47,14 +55,15 @@ See §15 of the architecture doc. In short:
 
 ```
 crates/        Rust core: schema-core (source of truth), schema-pf2e, schema-sf2e,
-               sync-engine (pure, no I/O), store, adapter-host, api
+               sync-engine (pure, no I/O), sync-engine-wasm, store, adapter-host, api
 packages/      TS shared: schema-types + schema-zod (GENERATED), adapter-sdk,
-               foundry-mapping
-adapters/      TS, contributed: foundry (reference adapter + relay module), roll20
+               foundry-mapping, web
+adapters/      TS, contributed: foundry (reference adapter + relay module), roll20,
+               pathbuilder
 cli/           `nexus` — Rust, clap, single static binary
 xtask/         cargo xtask codegen | openapi | fixtures
-examples/      fixtures/ (shared JSON ground-truth), example-adapter/ (Phase 3)
-docs/          ADRs
+examples/      fixtures/ (shared JSON ground truth), example-adapter/
+docs/          ADRs, adapter-authoring guide, self-hosting
 ```
 
 ## Build & test
@@ -62,12 +71,11 @@ docs/          ADRs
 ### Rust
 
 ```
-cargo test                              # all crates (132 tests)
+cargo test                              # all crates (210 tests)
 cargo test -p sync-engine               # merge engine + proptest laws
 cargo test -p api                       # API unit + integration tests
-cargo test -p adapter-host              # boundary + unit tests (33)
-cargo clippy --workspace --tests        # lint
-cargo fmt --check                       # format check
+cargo clippy --workspace --all-targets -- -D warnings   # lint, as CI runs it
+cargo fmt --all -- --check              # format check
 cargo xtask codegen && git diff --exit-code  # codegen staleness check (§3.6)
 cargo deny check                        # supply chain (licenses, advisories, bans)
 ```
@@ -76,10 +84,11 @@ cargo deny check                        # supply chain (licenses, advisories, ba
 
 ```
 pnpm install                            # install all workspace deps
-pnpm test                               # all packages + adapters (156 tests)
-pnpm test --filter @nexus-sheet/foundry # Foundry adapter + relay module (89 tests)
-pnpm test --filter @nexus-sheet/roll20  # Roll20 adapter (48 tests)
-pnpm test --filter @nexus-sheet/adapter-sdk  # SDK + contract harness (19 tests)
+pnpm test                               # all packages + adapters (217, or 222 with WASM built)
+pnpm test --filter @nexus-ttrpg/foundry-adapter      # Foundry adapter + relay module
+pnpm test --filter @nexus-ttrpg/roll20-adapter       # Roll20 adapter
+pnpm test --filter @nexus-ttrpg/pathbuilder-adapter  # Pathbuilder adapter
+pnpm test --filter @nexus-ttrpg/adapter-sdk          # SDK + contract harness
 ```
 
 ### CLI
@@ -94,6 +103,15 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
 ## Tooling
 
 - Rust toolchain pinned via `rust-toolchain.toml` (1.97.1).
-- Node pinned via `.nvmrc` (22) and `package.json` `engines`; pnpm via corepack.
+- Node 22, pinned via `.nvmrc` and `package.json` `engines`; pnpm 11 via
+  `packageManager`. Newer Node versions can break native dependencies.
 - `cargo xtask codegen && git diff --exit-code` — the codegen staleness check
   (§3.6); the whole cross-language schema guarantee rests on this one CI job.
+
+## License
+
+Licensed under either of [Apache License, Version 2.0](./LICENSE-APACHE) or
+[MIT license](./LICENSE-MIT), at your option.
+
+Pathfinder and Starfinder are trademarks of Paizo Inc. This project is not
+affiliated with or endorsed by Paizo, Foundry Gaming or Roll20.

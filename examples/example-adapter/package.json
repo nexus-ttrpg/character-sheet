@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/example-adapter",
+  "name": "@nexus-ttrpg/example-adapter",
   "version": "0.1.0",
   "private": true,
   "description": "Clone-rename-implement-ship adapter template (§19 Phase 3.4). A minimal generic-JSON adapter that passes the contract harness out of the box.",
@@ -19,8 +19,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexus-sheet/adapter-sdk": "workspace:*",
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/adapter-sdk": "workspace:*",
+    "@nexus-ttrpg/schema-types": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.27.0"

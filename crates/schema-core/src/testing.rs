@@ -1,5 +1,5 @@
 //! Test support — minimal fixtures for unit and integration tests across
-//! the project (§16). Mirrors the `@nexus-sheet/adapter-sdk/testing` pattern
+//! the project (§16). Mirrors the `@nexus-ttrpg/adapter-sdk/testing` pattern
 //! on the TS side: a shared, minimal character build that downstream crates'
 //! tests (sync-engine proptest, store round-trip, contract tests) can use
 //! without each rebuilding one.

@@ -1,5 +1,5 @@
 {
-  "name": "nexus-sheet",
+  "name": "character-sheet",
   "private": true,
   "version": "0.1.0",
   "description": "Cross-VTT character synchronization platform for PF2e / SF2e.",

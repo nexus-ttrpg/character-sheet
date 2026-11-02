@@ -9,8 +9,8 @@ import type {
   ExportContext,
   AdapterWarning,
   PartialBuild,
-} from "@nexus-sheet/adapter-sdk";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+} from "@nexus-ttrpg/adapter-sdk";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 
 export interface ExamplePlatformPayload {
   characterName: string;

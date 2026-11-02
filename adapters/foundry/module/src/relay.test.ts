@@ -13,8 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
-import { exportActor, importActor, type FoundryActor } from "@nexus-sheet/foundry-mapping";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
+import { exportActor, importActor, type FoundryActor } from "@nexus-ttrpg/foundry-mapping";
 
 import {
   generateApiKey,

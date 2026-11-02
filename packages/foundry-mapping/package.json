@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/foundry-mapping",
+  "name": "@nexus-ttrpg/foundry-mapping",
   "version": "0.1.0",
   "private": true,
   "description": "PF2e/SF2e Actor↔canonical mapping logic, written once and shared by plain import between the Foundry adapter and the relay module (§7.1).",
@@ -17,6 +17,6 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/schema-types": "workspace:*"
   }
 }

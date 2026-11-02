@@ -1,4 +1,4 @@
-// @nexus-sheet/adapter-sdk/testing — the one-line contract test harness (§16).
+// @nexus-ttrpg/adapter-sdk/testing — the one-line contract test harness (§16).
 //
 //   describe("roll20", () => runContractTests(adapter, fixtures));
 //
@@ -18,7 +18,7 @@ import type {
   ImportContext,
   ExportContext,
 } from "./index.js";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 
 // ── Fixture type ─────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ export interface AdapterFixture<TPlatform = unknown> {
  * Run the standard contract test suite against an adapter (§16).
  *
  * ```ts
- * import { runContractTests } from "@nexus-sheet/adapter-sdk/testing";
+ * import { runContractTests } from "@nexus-ttrpg/adapter-sdk/testing";
  * import { myAdapter } from "../src/index.js";
  * import { fixtures } from "../../examples/fixtures/index.js";
  *

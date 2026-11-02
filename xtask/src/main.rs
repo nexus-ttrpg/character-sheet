@@ -1,7 +1,7 @@
 //! xtask — build tooling run as ordinary Rust programs (§15).
 //!
 //! Subcommands:
-//!   codegen   — Rust types → canonical.schema.json → @nexus-sheet/schema-types/zod (§3.6)
+//!   codegen   — Rust types → canonical.schema.json → @nexus-ttrpg/schema-types/zod (§3.6)
 //!   openapi   — export OpenAPI spec from api types (§13)
 //!   fixtures  — regenerate fixture manifests
 //!

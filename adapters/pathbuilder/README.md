@@ -1,4 +1,4 @@
-# @nexus-sheet/pathbuilder-adapter
+# @nexus-ttrpg/pathbuilder-adapter
 
 The first **third-party-builder** adapter (architecture §8). Pathbuilder 2e is a
 PF2e character *builder* (not a VTT): a standalone app where a player constructs
@@ -34,7 +34,7 @@ mechanism that catches real-format drift.
 
 ```
 pnpm test                                   # contract + pathbuilder-specific tests
-pnpm --filter @nexus-sheet/pathbuilder-adapter bundle   # esbuild single-file ESM
+pnpm --filter @nexus-ttrpg/pathbuilder-adapter bundle   # esbuild single-file ESM
 ```
 
 See `docs/adapter-authoring-guide.md` for the contribution workflow.

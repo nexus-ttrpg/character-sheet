@@ -24,8 +24,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
-import { exportActor, importActor, type FoundryActor, type FoundrySystemId } from "@nexus-sheet/foundry-mapping";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
+import { exportActor, importActor, type FoundryActor, type FoundrySystemId } from "@nexus-ttrpg/foundry-mapping";
 
 import { NodeHttpServer } from "./node-http-server.js";
 import { registerRoutes } from "./endpoints.js";

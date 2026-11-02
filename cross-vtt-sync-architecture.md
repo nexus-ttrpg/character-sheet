@@ -1,4 +1,4 @@
-# Nexus Sheet — A Cross-VTT Character Synchronization Platform for PF2e / SF2e
+# Nexus Character Sheet — A Cross-VTT Character Synchronization Platform for PF2e / SF2e
 
 **Status:** Architecture proposal (pre-implementation)
 **Core language:** Rust, with a deliberately minimal JavaScript surface where target platforms force it (§6, §7)
@@ -10,7 +10,7 @@
 
 Every design decision below answers one question: **"Does this make it easier to add the next adapter, without touching the engine?"** If a choice makes the Roll20 adapter simpler but couples the engine to Roll20's data shape, it's the wrong choice. The project's long-term value isn't the Roll20 or Foundry adapter — it's the canonical model and the diff/merge engine sitting between them. Adapters are cheap and disposable; the core must not be.
 
-This is why the project is pitched as "Git for TTRPG characters" rather than "a Roll20-Foundry sync tool." Git doesn't know what a file *means*; it knows how to diff and merge byte streams and delegates meaning to the tools built on top. Nexus Sheet doesn't know what Roll20 or Foundry *are*; it knows how to diff and merge a canonical character graph, and delegates platform meaning to adapters.
+This is why the project is pitched as "Git for TTRPG characters" rather than "a Roll20-Foundry sync tool." Git doesn't know what a file *means*; it knows how to diff and merge byte streams and delegates meaning to the tools built on top. Nexus Character Sheet doesn't know what Roll20 or Foundry *are*; it knows how to diff and merge a canonical character graph, and delegates platform meaning to adapters.
 
 ### 0.1 The language boundary: Rust core, TypeScript adapters
 
@@ -48,7 +48,7 @@ There is a coherent position that says the remaining Rust core is small enough t
 ```
 ╔══════════════════════════ RUST CORE ═══════════════════════════╗
 ║                    ┌─────────────────────────┐                  ║
-║                    │   Nexus Sheet API        │                 ║
+║                    │   Nexus Character Sheet API        │                 ║
 ║                    │   (Axum, PostgreSQL)     │                 ║
 ║                    └────────────┬─────────────┘                 ║
 ║             ┌───────────────────┼───────────────────┐           ║
@@ -64,7 +64,7 @@ There is a coherent position that says the remaining Rust core is small enough t
 ╔═══════════════════════════════════╪═══════════════════▼══════════╗
 ║                        TYPESCRIPT ADAPTERS                        ║
 ║   ┌──────────────────────────────────────────────────────────┐   ║
-║   │        @nexus-sheet/adapter-sdk                            │  ║
+║   │        @nexus-ttrpg/adapter-sdk                            │  ║
 ║   │   types · CharacterAdapter interface · contract harness    │  ║
 ║   └───┬──────────┬──────────────┬──────────────┬──────────────┘  ║
 ║   ┌───▼───┐ ┌────▼────┐ ┌───────▼──────┐ ┌─────▼───────┐         ║
@@ -226,8 +226,8 @@ crates/schema (Rust types)          ← the only hand-written definition
         ▼
   canonical.schema.json             ← published artifact, versioned
         │
-        ├─► json-schema-to-typescript ─► @nexus-sheet/schema-types  (TS types)
-        ├─► json-schema-to-zod         ─► @nexus-sheet/schema-zod   (runtime validation)
+        ├─► json-schema-to-typescript ─► @nexus-ttrpg/schema-types  (TS types)
+        ├─► json-schema-to-zod         ─► @nexus-ttrpg/schema-zod   (runtime validation)
         └─► consumed directly by any third-party tooling, in any language
 ```
 
@@ -274,10 +274,10 @@ The API exposes session state as read-only telemetry (`GET /characters/:id/sessi
 
 ### 5.1 The interface (TypeScript)
 
-This is the surface community contributors write against. It is published as `@nexus-sheet/adapter-sdk` and is the only part of the system an adapter author needs to understand.
+This is the surface community contributors write against. It is published as `@nexus-ttrpg/adapter-sdk` and is the only part of the system an adapter author needs to understand.
 
 ```ts
-import type { CharacterBuild, PartialBuild } from "@nexus-sheet/schema-types";
+import type { CharacterBuild, PartialBuild } from "@nexus-ttrpg/schema-types";
 
 export interface CharacterAdapter<TPlatform = unknown> {
   readonly id: string;                       // "roll20" | "foundry" | ...
@@ -405,7 +405,7 @@ Roll20's extensibility surface here is **Mod Scripts (the API sandbox)**, <cite 
 With adapters in TypeScript, the collector and its adapter are now the same language — but they should still be different *artifacts*, and the reason is not language, it's deployment:
 
 ```
-Roll20 sandbox (~150 lines, no logic)              Nexus Sheet server
+Roll20 sandbox (~150 lines, no logic)              Nexus Character Sheet server
 ┌──────────────────────────────┐                   ┌──────────────────────────────┐
 │ nexus-collector.js            │ raw attribute JSON│ adapters/roll20 (TS)          │
 │  - reads Character/Attribute  │ ─────────────────►│  - mapping table              │
@@ -434,8 +434,8 @@ This is a deployment-topology argument, not a language argument, and it would ho
 Roll20 sheets store data as flat `Attribute` rows keyed by name (`strength_score`, `repeating_skills_-abc123_skill_name`), plus repeating sections addressed by generated row IDs — very different from canonical's nested graph. Handled in the adapter as declarative data, not imperative field-by-field code:
 
 ```ts
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
-import { canonicalPath } from "@nexus-sheet/adapter-sdk";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
+import { canonicalPath } from "@nexus-ttrpg/adapter-sdk";
 
 type MappingTarget =
   | { kind: "attr"; name: string }
@@ -495,7 +495,7 @@ Foundry's client runs in a browser and its modules are JavaScript, so with adapt
 
 An earlier all-Rust draft achieved this same sharing by compiling a Rust crate to WASM with `wasm-bindgen`, plus a test suite asserting the native and WASM builds produced identical output. That machinery exists only to move Rust into a JS runtime. With the adapter already in TS, it's an import statement. This is the clearest concrete win from the split, and it removes an entire category of build complexity and a whole test layer from §16.
 
-The relay module (`nexus-sheet-relay`) then:
+The relay module (`nexus-character-sheet`) then:
 1. Registers authenticated local HTTP endpoints, keyed by an API key generated in module settings.
 2. Hooks `Actor` create/update to maintain drift telemetry (§5.3) — still never auto-syncing (§4), but drift checks don't need to poll.
 3. Imports `foundry-mapping` directly to convert Actors to canonical in-browser.
@@ -755,7 +755,7 @@ Because states are immutable snapshots in a DAG, rollback records a *new* snapsh
 - **Queued operations flush on reconnect.** The Foundry relay and the CLI queue outbound syncs locally when the API is unreachable.
 - **Every sync operation is idempotent and content-addressed.** Operations are keyed by `content_hash` + parent snapshot, so replaying a queued op after a flaky reconnect is a no-op rather than a duplicate snapshot.
 - **Conflict resolution already assumes divergence**, so "offline for two weeks with local edits" isn't a special case — it's an ordinary three-way merge with a bigger diff.
-- **No feature requires the hosted service.** A GM can run an entire self-hosted campaign against a local SQLite store with the CLI and never contact any Nexus Sheet server. The hosted API is a convenience (multi-device, hosted history, sharing), never a dependency. For Foundry specifically, §7.4's world-shutdown-gated direct access means even the relay module is optional for offline workflows.
+- **No feature requires the hosted service.** A GM can run an entire self-hosted campaign against a local SQLite store with the CLI and never contact any Nexus Character Sheet server. The hosted API is a convenience (multi-device, hosted history, sharing), never a dependency. For Foundry specifically, §7.4's world-shutdown-gated direct access means even the relay module is optional for offline workflows.
 
 ---
 
@@ -926,7 +926,7 @@ Accepted because the merge engine's correctness and the adapter contribution sto
 ## 15. Repository Structure
 
 ```
-nexus-sheet/
+character-sheet/
 ├── Cargo.toml                    # Rust workspace
 ├── pnpm-workspace.yaml           # TS workspace
 │
@@ -951,7 +951,7 @@ nexus-sheet/
 │   │   └── collector/            # nexus-collector.js — unbuilt, unminified, auditable
 │   ├── foundry/
 │   │   ├── src/
-│   │   └── module/               # nexus-sheet-relay + module.json
+│   │   └── module/               # nexus-character-sheet + module.json
 │   ├── pathbuilder/              # import-only
 │   ├── wanderers-guide/          # import-only
 │   └── demiplane/                # feature-flagged, best-effort
@@ -981,7 +981,7 @@ nexus-sheet/
 |---|---|
 | **Unit tests** | `cargo test`, per crate, weighted heavily toward `sync-engine` — the highest-risk, most-reused code. |
 | **Property tests** | `proptest` against the merge engine, which is where Rust pays off most. Because `merge` is pure (§11.3), we can assert real algebraic laws over generated characters: merging a build with itself is identity; `merge(a, x, x)` never conflicts; auto-merged fields never lose a change made on exactly one side; `hash(x) == hash(roundtrip(x))`. These catch the interleaving bugs that example-based tests structurally cannot. |
-| **Adapter contract tests (TS)** | Shipped as `@nexus-sheet/adapter-sdk/testing` — a Vitest suite an adapter runs against itself in one line: `describe("roll20", () => runContractTests(adapter, fixtures))`. Asserts `import(export(fixture))` round-trips within `fieldCoverage`; `validate()` rejects known-bad input; `detectChanges` is a no-op on unchanged input; unknown content produces warnings rather than throwing (§5.2). This is the single most important artifact for contribution quality: a new adapter gets a meaningful correctness bar for free, in a test runner its author already knows, with no Rust in the loop. |
+| **Adapter contract tests (TS)** | Shipped as `@nexus-ttrpg/adapter-sdk/testing` — a Vitest suite an adapter runs against itself in one line: `describe("roll20", () => runContractTests(adapter, fixtures))`. Asserts `import(export(fixture))` round-trips within `fieldCoverage`; `validate()` rejects known-bad input; `detectChanges` is a no-op on unchanged input; unknown content produces warnings rather than throwing (§5.2). This is the single most important artifact for contribution quality: a new adapter gets a meaningful correctness bar for free, in a test runner its author already knows, with no Rust in the loop. |
 | **Adapter unit tests (TS)** | Plain Vitest, no host, no database, no network — adapters are stateless objects (§5.4), so `pnpm test` in an adapter directory is fast and self-contained. |
 | **Host boundary tests (Rust)** | Assert the core rejects adapter output that violates the canonical schema, that capability grants are enforced (an adapter fetching a non-allowlisted host fails), and that a panicking or hanging adapter is contained rather than taking down the server. These test that the core distrusts adapters correctly (§1) — the security-relevant half of the boundary. |
 | **Codegen staleness check (CI)** | `cargo xtask codegen && git diff --exit-code`. The whole cross-language schema guarantee (§3.6) rests on this one job. |
@@ -1004,7 +1004,7 @@ Dropped from the all-Rust plan: the WASM parity suite, which existed only to pro
 - **Review is defense in depth, not the only defense.** Hosted-service adapter registration is still reviewed, but because capability grants are enforced at runtime, a missed review isn't a full compromise. Self-hosters can inspect an adapter's declared capabilities before installing it.
 - **System plugins are compiled in**, so trusting a system plugin equals trusting the repository — appropriate for the rare, high-stakes path (§10.2).
 - **Self-hosting trust boundary:** self-hosters run their own database and API. The project's obligation is a well-documented deployment path and never assuming reachability of any hosted infrastructure.
-- **The pasted-script problem:** the Roll20 collector asks users to paste code into a system with access to their campaign. It stays unminified, unbuilt, and short enough to read (§6.5), and its signed-payload protocol means a compromised Nexus Sheet server still can't make the collector do anything outside writing sheet attributes.
+- **The pasted-script problem:** the Roll20 collector asks users to paste code into a system with access to their campaign. It stays unminified, unbuilt, and short enough to read (§6.5), and its signed-payload protocol means a compromised Nexus Character Sheet server still can't make the collector do anything outside writing sheet attributes.
 - **Rate limiting:** per-key token bucket in tower middleware (Redis-backed for multi-instance hosted, in-memory self-hosted), with more generous limits on read-heavy `drift`/`session` endpoints than on write-heavy `push`/`pull`.
 - **Supply chain:** `cargo-deny` and `cargo-audit` in CI, with a pinned `Cargo.lock` committed for the binaries.
 

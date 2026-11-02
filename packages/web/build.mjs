@@ -1,4 +1,4 @@
-// Build script for the Nexus Sheet web UI (Phase 3.1).
+// Build script for the Nexus Character Sheet web UI (Phase 3.1).
 //
 // Bundles src/main.ts → dist/app.js with esbuild, then copies the static
 // shell (index.html, style.css) and the WASM pkg (src/wasm/*) into dist/.

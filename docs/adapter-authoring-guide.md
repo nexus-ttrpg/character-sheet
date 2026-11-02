@@ -5,7 +5,7 @@ need Rust, `cargo`, or any Rust toolchain — the entire loop is TypeScript.
 
 ## The big picture
 
-Nexus Sheet sits between disposable platform adapters. Your adapter translates
+Nexus Character Sheet sits between disposable platform adapters. Your adapter translates
 between a VTT's character format and the canonical model. The canonical model
 and merge engine are Rust; adapters are TypeScript. The boundary is enforced in
 Rust — everything your adapter returns is validated against the canonical schema
@@ -33,7 +33,7 @@ pnpm install
 # 2. Clone the template
 cp -r examples/example-adapter adapters/my-platform
 
-# 3. Edit package.json: rename to @nexus-sheet/my-platform-adapter
+# 3. Edit package.json: rename to @nexus-ttrpg/my-platform-adapter
 
 # 4. Edit src/index.ts: change id, rewrite the payload type and mappings
 
@@ -42,20 +42,20 @@ cp -r examples/example-adapter adapters/my-platform
 # 6. Edit src/index.test.ts: update the import
 
 # 7. Test
-pnpm --filter @nexus-sheet/my-platform-adapter test
+pnpm --filter @nexus-ttrpg/my-platform-adapter test
 
 # 8. Bundle
-pnpm --filter @nexus-sheet/my-platform-adapter bundle
+pnpm --filter @nexus-ttrpg/my-platform-adapter bundle
 
 # 9. Open a PR
 ```
 
 ## The `CharacterAdapter<TPlatform>` interface
 
-Your adapter implements one interface from `@nexus-sheet/adapter-sdk`:
+Your adapter implements one interface from `@nexus-ttrpg/adapter-sdk`:
 
 ```ts
-import type { CharacterAdapter } from "@nexus-sheet/adapter-sdk";
+import type { CharacterAdapter } from "@nexus-ttrpg/adapter-sdk";
 
 const myAdapter: CharacterAdapter<MyPlatformPayload> = {
   id: "my-platform",
@@ -96,7 +96,7 @@ fields your adapter can round-trip. The UI uses this to show players a coverage
 preview before they push. Use `canonicalPath()` to get compile-time checking:
 
 ```ts
-import { canonicalPath } from "@nexus-sheet/adapter-sdk";
+import { canonicalPath } from "@nexus-ttrpg/adapter-sdk";
 
 const COVERAGE = [
   canonicalPath("build.identity.name"),
@@ -186,7 +186,7 @@ Your adapter gets a correctness bar for free. One line in your test file:
 
 ```ts
 import { describe } from "vitest";
-import { runContractTests } from "@nexus-sheet/adapter-sdk/testing";
+import { runContractTests } from "@nexus-ttrpg/adapter-sdk/testing";
 
 describe("my-platform", () => {
   runContractTests(myAdapter, fixtures);
@@ -233,7 +233,7 @@ export const adapter = myAdapter;
 Build it:
 
 ```bash
-pnpm --filter @nexus-sheet/my-platform-adapter bundle
+pnpm --filter @nexus-ttrpg/my-platform-adapter bundle
 # → dist/bundle/bundle.js (single-file ESM, no npm imports)
 ```
 
@@ -269,7 +269,7 @@ a manifest:
 These are enforced by the boundary validation in Rust. Your adapter output is
 validated before it reaches the engine — if it violates these, it's rejected:
 
-1. **Unknown fields are rejected.** The canonical schema uses `deny_unknown_fields`. If you return a field that doesn't exist in the schema, it's rejected. Use the generated types from `@nexus-sheet/schema-types` to stay within bounds.
+1. **Unknown fields are rejected.** The canonical schema uses `deny_unknown_fields`. If you return a field that doesn't exist in the schema, it's rejected. Use the generated types from `@nexus-ttrpg/schema-types` to stay within bounds.
 2. **Wrong types are rejected.** If `level` must be a number and you return a string, it's rejected.
 3. **Homebrew is a warning, never an error.** The contract harness asserts this directly.
 4. **Session state is never written.** Max HP only, never current/temp HP.
@@ -291,7 +291,7 @@ adapters/my-platform/
 
 ```json
 {
-  "name": "@nexus-sheet/my-platform-adapter",
+  "name": "@nexus-ttrpg/my-platform-adapter",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -304,8 +304,8 @@ adapters/my-platform/
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexus-sheet/adapter-sdk": "workspace:*",
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/adapter-sdk": "workspace:*",
+    "@nexus-ttrpg/schema-types": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.27.0"
@@ -361,8 +361,8 @@ Three adapters ship in-repo as worked examples:
 
 Before opening a PR:
 
-- [ ] `pnpm --filter @nexus-sheet/my-platform-adapter test` — all contract tests pass
-- [ ] `pnpm --filter @nexus-sheet/my-platform-adapter bundle` — bundle builds
+- [ ] `pnpm --filter @nexus-ttrpg/my-platform-adapter test` — all contract tests pass
+- [ ] `pnpm --filter @nexus-ttrpg/my-platform-adapter bundle` — bundle builds
 - [ ] `fieldCoverage` accurately reflects what you round-trip
 - [ ] No session state written (max HP only)
 - [ ] Unknown content warns, never throws

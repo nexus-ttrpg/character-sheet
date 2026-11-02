@@ -1,8 +1,8 @@
 import { describe } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { runContractTests, type AdapterFixture } from "@nexus-sheet/adapter-sdk/testing";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+import { runContractTests, type AdapterFixture } from "@nexus-ttrpg/adapter-sdk/testing";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 import { exampleAdapter, type ExamplePlatformPayload } from "./index.js";
 
 function loadFixture(filename: string): CharacterBuild {

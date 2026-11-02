@@ -11,10 +11,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { runContractTests, type AdapterFixture } from "@nexus-sheet/adapter-sdk/testing";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+import { runContractTests, type AdapterFixture } from "@nexus-ttrpg/adapter-sdk/testing";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 import { foundryAdapter } from "./index.js";
-import { exportActor, importActor, derivedMaxHp, derivedAbilityValue, type FoundryActor, type FoundrySystemId } from "@nexus-sheet/foundry-mapping";
+import { exportActor, importActor, derivedMaxHp, derivedAbilityValue, type FoundryActor, type FoundrySystemId } from "@nexus-ttrpg/foundry-mapping";
 
 // ── Load PF2e fixtures ───────────────────────────────────────────────────────
 

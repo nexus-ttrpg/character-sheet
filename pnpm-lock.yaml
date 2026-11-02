@@ -26,13 +26,13 @@ importers:
 
   adapters/foundry:
     dependencies:
-      '@nexus-sheet/adapter-sdk':
+      '@nexus-ttrpg/adapter-sdk':
         specifier: workspace:*
         version: link:../../packages/adapter-sdk
-      '@nexus-sheet/foundry-mapping':
+      '@nexus-ttrpg/foundry-mapping':
         specifier: workspace:*
         version: link:../../packages/foundry-mapping
-      '@nexus-sheet/schema-types':
+      '@nexus-ttrpg/schema-types':
         specifier: workspace:*
         version: link:../../packages/schema-types
     devDependencies:
@@ -45,10 +45,10 @@ importers:
 
   adapters/pathbuilder:
     dependencies:
-      '@nexus-sheet/adapter-sdk':
+      '@nexus-ttrpg/adapter-sdk':
         specifier: workspace:*
         version: link:../../packages/adapter-sdk
-      '@nexus-sheet/schema-types':
+      '@nexus-ttrpg/schema-types':
         specifier: workspace:*
         version: link:../../packages/schema-types
     devDependencies:
@@ -58,10 +58,10 @@ importers:
 
   adapters/roll20:
     dependencies:
-      '@nexus-sheet/adapter-sdk':
+      '@nexus-ttrpg/adapter-sdk':
         specifier: workspace:*
         version: link:../../packages/adapter-sdk
-      '@nexus-sheet/schema-types':
+      '@nexus-ttrpg/schema-types':
         specifier: workspace:*
         version: link:../../packages/schema-types
     devDependencies:
@@ -71,10 +71,10 @@ importers:
 
   examples/example-adapter:
     dependencies:
-      '@nexus-sheet/adapter-sdk':
+      '@nexus-ttrpg/adapter-sdk':
         specifier: workspace:*
         version: link:../../packages/adapter-sdk
-      '@nexus-sheet/schema-types':
+      '@nexus-ttrpg/schema-types':
         specifier: workspace:*
         version: link:../../packages/schema-types
     devDependencies:
@@ -84,17 +84,17 @@ importers:
 
   packages/adapter-sdk:
     dependencies:
-      '@nexus-sheet/schema-types':
+      '@nexus-ttrpg/schema-types':
         specifier: workspace:*
         version: link:../schema-types
     devDependencies:
-      '@nexus-sheet/schema-zod':
+      '@nexus-ttrpg/schema-zod':
         specifier: workspace:*
         version: link:../schema-zod
 
   packages/foundry-mapping:
     dependencies:
-      '@nexus-sheet/schema-types':
+      '@nexus-ttrpg/schema-types':
         specifier: workspace:*
         version: link:../schema-types
 

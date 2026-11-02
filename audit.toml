@@ -14,7 +14,7 @@ ignore = [
     # dependencies, which Cargo resolves into Cargo.lock even when the gating
     # feature is NOT enabled. We do not enable sqlx's `mysql` feature — the store
     # crate uses postgres + sqlite only (crates/store/Cargo.toml, §12) — so `rsa`
-    # is never compiled into any Nexus Sheet binary:
+    # is never compiled into any Nexus Character Sheet binary:
     #   $ cargo tree -i rsa --target all
     #   warning: nothing to print.
     # The advisory has NO fixed upgrade available upstream (as of the advisory

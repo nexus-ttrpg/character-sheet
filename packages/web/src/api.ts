@@ -1,4 +1,4 @@
-// Typed REST client for the Nexus Sheet API (§13). Every request carries the
+// Typed REST client for the Nexus Character Sheet API (§13). Every request carries the
 // `Authorization: Bearer nsk_live_…` header (§17). The base URL is configurable
 // so the UI can talk to a remote API in dev (CORS is permissive on the server).
 

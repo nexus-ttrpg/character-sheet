@@ -1,4 +1,4 @@
-# Nexus Sheet — Implementation Plan
+# Nexus Character Sheet — Implementation Plan
 
 **Status:** Phase 3 complete (MVP gate met). Phase 0 (foundations) ✅, Phase 1 (adapter boundary, GO — ADR 0001) ✅, Phase 2 (Axum API, Roll20, Foundry relay, SF2e) ✅, Phase 3 (conflict UX, WASM diff preview, migration framework, hardening, adapter-authoring guide) ✅. 438 tests passing (210 Rust + 228 TS). Post-MVP: the Pathbuilder adapter (first third-party-builder, import-only — §8) and the `packages/web` conflict UI are underway.
 **Relationship to the architecture doc:** This plan decomposes the §19 roadmap into sequenced workstreams with concrete deliverables, dependencies, and verification gates. It does not change any architecture decision — every choice here is justified by a §N reference back to the proposal. Where this plan adds detail the proposal leaves implicit, it says so.
@@ -105,7 +105,7 @@ Goal: the correctness-critical core exists, is property-tested, and the cross-la
 
 ### 0.4 Codegen pipeline + staleness check  ⚑ CRITICAL PATH
 
-**Goal:** the one-way pipeline (Rust types → `canonical.schema.json` → `@nexus-sheet/schema-types` + `@nexus-sheet/schema-zod`) committed and CI-enforced (§3.6).
+**Goal:** the one-way pipeline (Rust types → `canonical.schema.json` → `@nexus-ttrpg/schema-types` + `@nexus-ttrpg/schema-zod`) committed and CI-enforced (§3.6).
 
 **Deliverables:**
 - `xtask/src/codegen.rs`: runs `schemars` over registered types → writes `canonical.schema.json` → runs `json-schema-to-typescript` and `json-schema-to-zod` → writes `packages/schema-types/` and `packages/schema-zod/`.
@@ -194,7 +194,7 @@ Goal: prove the cross-language machinery end to end with one real adapter. This 
 
 **Deliverables:**
 - `packages/adapter-sdk`: the `CharacterAdapter<TPlatform>` interface (§5.1 — generic over platform format, the ergonomic win TS enables); `ImportOutcome`/`ExportOutcome`/`AdapterWarning`/`AdapterError` (§5.2); `AdapterCapabilities` with static `fieldCoverage` (§5.4); `ImportContext`/`ExportContext` carrying credentials from the connection record (§5.4).
-- `@nexus-sheet/adapter-sdk/testing`: `runContractTests(adapter, fixtures)` (§16) asserting: `import(export(fixture))` round-trips within `fieldCoverage`; `validate()` rejects known-bad input; `detectChanges` is a no-op on unchanged input; **unknown content produces warnings, never throws** (§5.2 — the homebrew invariant).
+- `@nexus-ttrpg/adapter-sdk/testing`: `runContractTests(adapter, fixtures)` (§16) asserting: `import(export(fixture))` round-trips within `fieldCoverage`; `validate()` rejects known-bad input; `detectChanges` is a no-op on unchanged input; **unknown content produces warnings, never throws** (§5.2 — the homebrew invariant).
 - `canonicalPath()` typed against generated schema types so a mapping typo is a build-time type error (§6.3).
 
 **Depends on:** 0.4 (generated types), 0.7 (fixtures). **Co-evolves with 1.3** — the harness is shaped by real use on the Foundry adapter, not guessed at (§19).
@@ -286,7 +286,7 @@ Goal: the hosted API, a structurally harder second adapter (Roll20), the Foundry
 **Goal:** the in-browser module sharing `foundry-mapping` by plain import (§7.1).
 
 **Deliverables:**
-- `adapters/foundry/module/`: `nexus-sheet-relay` + `module.json`; registers authenticated local HTTP endpoints keyed by a generated API key (§7, §7.1). Four endpoints: `GET /nexus/actors` (list), `GET /nexus/actors/:id` (import), `POST /nexus/actors/:id/apply` (export), `GET /nexus/drift` (drift report).
+- `adapters/foundry/module/`: `nexus-character-sheet` + `module.json`; registers authenticated local HTTP endpoints keyed by a generated API key (§7, §7.1). Four endpoints: `GET /nexus/actors` (list), `GET /nexus/actors/:id` (import), `POST /nexus/actors/:id/apply` (export), `GET /nexus/drift` (drift report).
 - Hooks `Actor` create/update for drift telemetry — still never auto-syncing (§4, §7.1). DriftTracker is pure logic, tested with mocks.
 - Imports `foundry-mapping` directly to convert Actors in-browser, works fully offline (§7.1). The round-trip test asserts the relay uses the same mapping as the server-side adapter.
 - Direct world access (LevelDB) is a **CLI concern** (§7.4), not the relay module — the relay is for running worlds only.

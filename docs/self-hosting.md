@@ -1,6 +1,6 @@
-# Self-Hosting Nexus Sheet
+# Self-Hosting Nexus Character Sheet
 
-Nexus Sheet offers two self-hosting paths:
+Nexus Character Sheet offers two self-hosting paths:
 
 1. **Docker + Postgres** — the full API server with webhooks, rate limiting, API
    keys, and multi-user support. Use this if you want the REST API and adapter
@@ -9,7 +9,7 @@ Nexus Sheet offers two self-hosting paths:
    network. A GM runs the entire campaign against a local SQLite file. Use this
    if you just want to sync characters between VTTs from the command line.
 
-Both paths are fully self-contained — neither contacts any hosted Nexus Sheet
+Both paths are fully self-contained — neither contacts any hosted Nexus Character Sheet
 infrastructure (§12).
 
 ---
@@ -68,7 +68,7 @@ restart** — always set this in production.
 The Docker image ships with pre-built Foundry and Roll20 adapter bundles. To add
 a custom adapter:
 
-1. Build the adapter bundle: `pnpm --filter @nexus-sheet/my-adapter bundle`
+1. Build the adapter bundle: `pnpm --filter @nexus-ttrpg/my-adapter bundle`
 2. Mount it: add a volume in `docker-compose.yml`:
    ```yaml
    volumes:
@@ -147,8 +147,8 @@ The CLI looks for adapter bundles in `./adapters/` by default. Build them:
 
 ```bash
 pnpm install
-pnpm --filter @nexus-sheet/foundry bundle
-pnpm --filter @nexus-sheet/roll20 bundle
+pnpm --filter @nexus-ttrpg/foundry-adapter bundle
+pnpm --filter @nexus-ttrpg/roll20-adapter bundle
 ```
 
 This produces `adapters/foundry/dist/bundle/bundle.js` and

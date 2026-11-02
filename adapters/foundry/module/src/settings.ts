@@ -12,7 +12,7 @@
 
 import type { FoundrySettings } from "./types.js";
 
-const MODULE_ID = "nexus-sheet-relay";
+const MODULE_ID = "nexus-character-sheet";
 const SETTING_KEY = "apiKey";
 
 /**

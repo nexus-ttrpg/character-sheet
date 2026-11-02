@@ -9,8 +9,8 @@
 // silently-skipped field (§6.3, §3.6). `fieldCoverage` is derived from the
 // table's paths (§6.3 point 2), so it can't drift out of date.
 
-import type { CharacterBuild, AbilityScoreKey } from "@nexus-sheet/schema-types";
-import { canonicalPath, type CanonicalPath } from "@nexus-sheet/adapter-sdk";
+import type { CharacterBuild, AbilityScoreKey } from "@nexus-ttrpg/schema-types";
+import { canonicalPath, type CanonicalPath } from "@nexus-ttrpg/adapter-sdk";
 
 // ── Roll20 sheet payload types ───────────────────────────────────────────────
 //

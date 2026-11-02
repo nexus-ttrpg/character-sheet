@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/web",
+  "name": "@nexus-ttrpg/web",
   "version": "0.1.0",
   "private": true,
   "description": "Minimal web UI — snapshot DAG timeline, conflict resolution, client-side WASM diff preview (Phase 3.1).",

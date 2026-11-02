@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { runContractTests, type AdapterFixture } from "@nexus-sheet/adapter-sdk/testing";
-import { AdapterError } from "@nexus-sheet/adapter-sdk";
-import type { CharacterBuild, AbilityScoreKey } from "@nexus-sheet/schema-types";
+import { runContractTests, type AdapterFixture } from "@nexus-ttrpg/adapter-sdk/testing";
+import { AdapterError } from "@nexus-ttrpg/adapter-sdk";
+import type { CharacterBuild, AbilityScoreKey } from "@nexus-ttrpg/schema-types";
 import { pathbuilderAdapter, type PathbuilderCharacter } from "./index.js";
 import { canonicalToPathbuilder } from "./mapping.js";
 function loadFixture(filename: string): CharacterBuild {

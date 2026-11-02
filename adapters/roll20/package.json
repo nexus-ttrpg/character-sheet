@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/roll20-adapter",
+  "name": "@nexus-ttrpg/roll20-adapter",
   "version": "0.1.0",
   "private": true,
   "description": "Roll20 adapter — the structurally harder second adapter (§6, §21). Flat attribute rows + repeating sections, sandboxed JS, asleep sandboxes. Collector is logic-free; mapping is declarative.",
@@ -19,8 +19,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexus-sheet/adapter-sdk": "workspace:*",
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/adapter-sdk": "workspace:*",
+    "@nexus-ttrpg/schema-types": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.27.0"

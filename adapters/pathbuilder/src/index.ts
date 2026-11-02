@@ -1,4 +1,4 @@
-// @nexus-sheet/pathbuilder-adapter — first third-party-builder adapter (§8).
+// @nexus-ttrpg/pathbuilder-adapter — first third-party-builder adapter (§8).
 // See src/mapping.ts for the FORMAT FIDELITY CAVEAT.
 // §8: Pathbuilder has no write-back API, so supportsExport is false.
 // export() is still implemented (manual re-import + round-trip contract).
@@ -11,9 +11,9 @@ import type {
   ImportContext,
   ExportContext,
   AdapterWarning,
-} from "@nexus-sheet/adapter-sdk";
-import { AdapterError } from "@nexus-sheet/adapter-sdk";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+} from "@nexus-ttrpg/adapter-sdk";
+import { AdapterError } from "@nexus-ttrpg/adapter-sdk";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 import {
   canonicalToPathbuilder,
   pathbuilderToCanonical,

@@ -21,8 +21,8 @@ import type {
   AbilityBoostSource,
   ProficiencyRank,
   FeatCategory,
-} from "@nexus-sheet/schema-types";
-import { canonicalPath, type PartialBuild } from "@nexus-sheet/adapter-sdk";
+} from "@nexus-ttrpg/schema-types";
+import { canonicalPath, type PartialBuild } from "@nexus-ttrpg/adapter-sdk";
 
 // ── Payload types ────────────────────────────────────────────────────────────
 //

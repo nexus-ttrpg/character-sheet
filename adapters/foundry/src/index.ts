@@ -1,10 +1,10 @@
-// @nexus-sheet/foundry-adapter — the reference adapter (§7, §19).
+// @nexus-ttrpg/foundry-adapter — the reference adapter (§7, §19).
 //
 // Foundry is the richer target: a Node.js web application run locally by the
 // GM, with a real module system and a document/embedded-document model that
 // maps far more naturally onto canonical than Roll20's flat attributes (§7).
 //
-// This adapter consumes `@nexus-sheet/foundry-mapping` for the actual
+// This adapter consumes `@nexus-ttrpg/foundry-mapping` for the actual
 // Actor↔canonical logic — shared by plain import with the relay module that
 // runs in-browser (§7.1). The adapter itself is a thin wrapper that adapts
 // the mapping functions to the `CharacterAdapter` interface.
@@ -18,8 +18,8 @@ import type {
   ImportContext,
   ExportContext,
   AdapterWarning,
-} from "@nexus-sheet/adapter-sdk";
-import type { CharacterBuild } from "@nexus-sheet/schema-types";
+} from "@nexus-ttrpg/adapter-sdk";
+import type { CharacterBuild } from "@nexus-ttrpg/schema-types";
 import {
   exportActor,
   importActor,
@@ -27,7 +27,7 @@ import {
   type FoundryActor,
   type FoundryItem,
   type FoundrySystemId,
-} from "@nexus-sheet/foundry-mapping";
+} from "@nexus-ttrpg/foundry-mapping";
 
 // ── Adapter capabilities (§5.4) ──────────────────────────────────────────────
 //
@@ -102,7 +102,7 @@ export const foundryAdapter: CharacterAdapter<FoundryActor> = {
         });
       }
       // Homebrew items are flagged, not rejected (§7.7).
-      if (item.flags?.["nexus-sheet"]?.homebrew) {
+      if (item.flags?.["nexus-character-sheet"]?.homebrew) {
         warnings.push({
           path: `items.${item.system.slug ?? item.name}`,
           kind: { type: "fuzzyMatch", confidence: 0.5 },
@@ -233,4 +233,4 @@ export const foundryAdapter: CharacterAdapter<FoundryActor> = {
 export { derivedMaxHp };
 
 // Re-export platform types for adapter consumers.
-export type { FoundryActor, FoundryItem } from "@nexus-sheet/foundry-mapping";
+export type { FoundryActor, FoundryItem } from "@nexus-ttrpg/foundry-mapping";

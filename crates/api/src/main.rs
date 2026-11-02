@@ -1,4 +1,4 @@
-//! Nexus Sheet API server binary (§13, §14, §17).
+//! Nexus Character Sheet API server binary (§13, §14, §17).
 //!
 //! Reads configuration from environment variables, constructs `AppState`,
 //! and serves the Axum router. The API server uses Postgres (§12); for the

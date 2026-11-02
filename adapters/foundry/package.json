@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/foundry-adapter",
+  "name": "@nexus-ttrpg/foundry-adapter",
   "version": "0.1.0",
   "private": true,
   "description": "Foundry reference adapter — the adapter every later adapter is modeled on (§7, §19). Consumes foundry-mapping for the actual Actor↔canonical logic.",
@@ -17,13 +17,13 @@
     "build": "tsc -p tsconfig.json",
     "typecheck:relay": "tsc -p module/tsconfig.json",
     "bundle": "esbuild src/bundle.ts --bundle --format=esm --target=es2022 --outfile=dist/bundle/bundle.js",
-    "bundle:relay": "esbuild module/relay-bundle.ts --bundle --format=esm --target=es2022 --outfile=module/nexus-sheet-relay.js",
+    "bundle:relay": "esbuild module/relay-bundle.ts --bundle --format=esm --target=es2022 --outfile=module/nexus-character-sheet.js",
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexus-sheet/adapter-sdk": "workspace:*",
-    "@nexus-sheet/foundry-mapping": "workspace:*",
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/adapter-sdk": "workspace:*",
+    "@nexus-ttrpg/foundry-mapping": "workspace:*",
+    "@nexus-ttrpg/schema-types": "workspace:*"
   },
   "devDependencies": {
     "esbuild": "^0.27.0",

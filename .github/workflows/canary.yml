@@ -44,7 +44,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @nexus-sheet/foundry-adapter bundle
+      - run: pnpm --filter @nexus-ttrpg/foundry-adapter bundle
         name: Build Foundry adapter bundle
       - uses: dtolnay/rust-toolchain@1.97
       - uses: Swatinem/rust-cache@v2

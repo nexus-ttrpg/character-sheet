@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-/// `nexus` — Nexus Sheet CLI (§12, §19).
+/// `nexus` — Nexus Character Sheet CLI (§12, §19).
 ///
 /// Offline-first character sync for PF2e/SF2e. Local SQLite store; adapter
 /// bundles alongside the binary. No server required for self-hosting (§12).

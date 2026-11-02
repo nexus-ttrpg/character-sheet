@@ -8,7 +8,7 @@ the starting point for a new platform adapter.
 ```bash
 # From the repo root:
 pnpm install
-pnpm test --filter @nexus-sheet/example-adapter
+pnpm test --filter @nexus-ttrpg/example-adapter
 ```
 
 All contract tests should pass.
@@ -20,7 +20,7 @@ cp -r examples/example-adapter adapters/my-platform
 ```
 
 Then edit `adapters/my-platform/package.json`:
-- `"name"`: `"@nexus-sheet/my-platform-adapter"`
+- `"name"`: `"@nexus-ttrpg/my-platform-adapter"`
 
 Edit `adapters/my-platform/src/index.ts`:
 - Change `id` from `"example"` to `"my-platform"`
@@ -40,7 +40,7 @@ Edit `adapters/my-platform/src/index.test.ts`:
 |------|---------|
 | `src/index.ts` | The `CharacterAdapter<ExamplePlatformPayload>` implementation |
 | `src/bundle.ts` | esbuild entry — exports `adapter` (the host appends `globalThis.__nexusAdapter = adapter;`) |
-| `src/index.test.ts` | Contract tests via `runContractTests()` from `@nexus-sheet/adapter-sdk/testing` |
+| `src/index.test.ts` | Contract tests via `runContractTests()` from `@nexus-ttrpg/adapter-sdk/testing` |
 | `package.json` | Scripts: `build` (tsc), `bundle` (esbuild ESM), `test` (vitest) |
 | `tsconfig.json` | Extends `../../tsconfig.base.json` |
 
@@ -59,9 +59,9 @@ Your adapter must implement `CharacterAdapter<TPlatform>`:
 
 ```bash
 pnpm install
-pnpm test --filter @nexus-sheet/my-platform
+pnpm test --filter @nexus-ttrpg/my-platform-adapter
 # iterate on src/index.ts
-pnpm --filter @nexus-sheet/my-platform bundle
+pnpm --filter @nexus-ttrpg/my-platform-adapter bundle
 # → dist/bundle/bundle.js (single-file ESM, loaded by the V8 sandbox)
 ```
 

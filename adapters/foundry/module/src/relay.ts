@@ -18,7 +18,7 @@ import { registerApiKeySetting, getOrGenerateApiKey } from "./settings.js";
 import { DriftTracker, actorContentHash } from "./drift.js";
 import { registerRoutes } from "./endpoints.js";
 
-const MODULE_ID = "nexus-sheet-relay";
+const MODULE_ID = "nexus-character-sheet";
 
 /**
  * Initialize the relay module.

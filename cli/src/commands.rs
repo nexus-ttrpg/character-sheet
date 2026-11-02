@@ -565,7 +565,7 @@ mod tests {
     }
 
     /// Path to the pre-built adapter bundle (produced by `pnpm --filter
-    /// @nexus-sheet/foundry-adapter bundle`). Tests skip if absent.
+    /// @nexus-ttrpg/foundry-adapter bundle`). Tests skip if absent.
     fn adapter_bundle_path() -> PathBuf {
         workspace_root().join("adapters/foundry/dist/bundle/bundle.js")
     }
@@ -599,7 +599,7 @@ mod tests {
         let bundle = adapter_bundle_path();
         assert!(
             bundle.exists(),
-            "adapter bundle not found at {} — run `pnpm --filter @nexus-sheet/foundry-adapter bundle` first",
+            "adapter bundle not found at {} — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` first",
             bundle.display()
         );
 

@@ -1,5 +1,5 @@
 {
-  "name": "@nexus-sheet/adapter-sdk",
+  "name": "@nexus-ttrpg/adapter-sdk",
   "version": "0.1.0",
   "private": true,
   "description": "The contribution surface: CharacterAdapter interface, contexts, warnings/errors, and the contract test harness (§5). A contributor writing an adapter never installs Rust.",
@@ -21,9 +21,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@nexus-sheet/schema-types": "workspace:*"
+    "@nexus-ttrpg/schema-types": "workspace:*"
   },
   "devDependencies": {
-    "@nexus-sheet/schema-zod": "workspace:*"
+    "@nexus-ttrpg/schema-zod": "workspace:*"
   }
 }
