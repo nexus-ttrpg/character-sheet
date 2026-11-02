@@ -67,7 +67,10 @@ async fn postgres_api_round_trip() {
         .get_host_port_ipv4(5432)
         .await
         .expect("get container port");
-    let url = format!("postgres://postgres:postgres@127.0.0.1:{port}/postgres");
+    // Ask testcontainers for the host rather than assuming 127.0.0.1, which is
+    // wrong whenever Docker is not local (Docker-in-Docker, remote daemons).
+    let host = container.get_host().await.expect("get container host");
+    let url = format!("postgres://postgres:postgres@{host}:{port}/postgres");
 
     // Build the PgStore from a connection pool.
     let pool = sqlx::PgPool::connect(&url)

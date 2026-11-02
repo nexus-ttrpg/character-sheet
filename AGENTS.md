@@ -9,7 +9,7 @@ Guidance for AI agents (Claude Code, etc.) working in this repository.
 sitting between disposable platform adapters. Rust core, TypeScript adapters.
 
 **Status:** Phase 3 complete (MVP gate met). Phases 0, 1, 2, and 3 are
-complete. 438 tests passing (210 Rust + 228 TS). Post-MVP: the Pathbuilder
+complete. 432 tests passing (210 Rust + 222 TS; CI runs 217 TS without the WASM build). Post-MVP: the Pathbuilder
 adapter (first third-party-builder, import-only) and the `packages/web` conflict
 UI are underway. See `CLAUDE.md` for full
 invariants and status, `implementation-plan.md` for the phased plan,
@@ -18,19 +18,46 @@ throughout the code).
 
 ## Commands to run
 
-### Before declaring a task done — run ALL of these:
+### Before saying a change is ready to commit — run every CI check, exactly as CI runs it
+
+**Never tell the owner they can commit until every command below has passed
+locally.** They mirror `.github/workflows/` one for one. Weaker variants
+(`cargo clippy --tests` without `-D warnings`, cargo-deny without cargo-audit,
+skipping the e2e gate) have already let CI failures through.
+
+Prerequisites: Node 22 + pnpm 11, `cargo-deny`, `cargo-audit`, and Docker
+running (otherwise `postgres_integration` skips silently).
 
 ```
-cargo test --workspace                        # all Rust tests
-cargo clippy --workspace --tests              # lint
-cargo fmt --check                             # format check
-cargo xtask codegen && git diff --exit-code   # codegen staleness (§3.6)
-pnpm test                                     # all TS tests
+# rust.yml — test + lint + boundary
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+! cargo tree -p sync-engine --prefix none | grep -qE '^(store|api|adapter-host) v'   # boundary: must exit 0
+
+# rust.yml — codegen staleness, and ts.yml
+pnpm install --frozen-lockfile
+cargo xtask codegen        # then commit any change it makes to the generated files
+pnpm test
+
+# canary.yml — e2e gate
+pnpm --filter @nexus-ttrpg/foundry-adapter bundle
+cargo test -p api --test e2e_gate
+
+# audit.yml — all three; cargo-audit and cargo-deny find different things
+cargo deny check
+cargo audit                # reads .cargo/audit.toml; scans the whole Cargo.lock
+pnpm audit --audit-level high   # informational (continue-on-error in CI)
 ```
 
-`cargo xtask codegen && git diff --exit-code` is the cross-language schema
-guarantee check — if it fails, you changed Rust schema types without
-regenerating. Fix it, don't skip it.
+Report the result of each check. If one could not run (missing tool, Docker
+down), **say so explicitly** instead of calling the change green. A local pass
+is not proof: CI is a fresh Linux build on `ubuntu-latest`, so after a push,
+check the Actions runs before saying CI is fixed.
+
+`cargo xtask codegen` is the cross-language schema guarantee — if it changes
+generated files, you changed Rust schema types without regenerating. Commit the
+regenerated output, don't skip it.
 
 ### Scoped test runs
 

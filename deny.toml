@@ -5,7 +5,7 @@
 # cargo-deny fails on any vulnerability / unmaintained / unsound advisory by
 # default; `yanked` is downgraded to a warning. Individual advisories with no
 # safe upgrade path are acknowledged in `ignore` below (keep in sync with
-# audit.toml).
+# .cargo/audit.toml).
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "warn"
 ignore = [

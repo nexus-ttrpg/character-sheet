@@ -97,6 +97,21 @@ cargo run -p nexus-cli -- diff                            # field-level diff
 cargo run -p nexus-cli -- history                         # snapshot DAG
 ```
 
+## Before saying a change is ready to commit
+
+**Run every CI check locally, exactly as `.github/workflows/` runs it, and never
+tell the owner they can commit until all of them pass.** The full command list,
+with prerequisites, is in `AGENTS.md` under "Before saying a change is ready to
+commit". In short: `cargo fmt --all -- --check`, `cargo clippy --workspace
+--all-targets -- -D warnings`, `cargo test --workspace` with Docker running, the
+sync-engine boundary check, `pnpm install --frozen-lockfile`, `cargo xtask
+codegen`, `pnpm test`, the Foundry bundle plus `cargo test -p api --test
+e2e_gate`, `cargo deny check` **and** `cargo audit`, and `pnpm audit`.
+
+Report each result. If a check could not run, say so instead of calling the
+change green. CI is a fresh Linux build, so a local pass is not proof: after a
+push, check the Actions runs.
+
 ## CI & tooling notes
 
 - **No Node 20.** GitHub deprecated the Node 20 action runtime (Sept 2025);
@@ -118,10 +133,15 @@ cargo run -p nexus-cli -- history                         # snapshot DAG
   (§17) and they differ: cargo-audit scans the whole `Cargo.lock` regardless of
   enabled features (so resolved-but-uncompiled crates still flag), cargo-deny
   enforces `deny.toml`. Acknowledged-but-unfixable advisories are silenced in
-  `audit.toml` and `deny.toml` respectively — keep both in sync when silencing
-  one. Example: `rsa`/RUSTSEC-2023-0071 is an uncompiled transitive of the unused
-  `sqlx-mysql` driver with no upstream fix — silenced in `audit.toml` (and not in
-  `deny.toml` only because cargo-deny already passes via its own ignore list).
+  `.cargo/audit.toml` and `deny.toml` respectively — keep both in sync when
+  silencing one. **cargo-audit only reads `.cargo/audit.toml`** (or
+  `~/.cargo/audit.toml`); a root-level `audit.toml` is silently ignored, which
+  is why the `cargo-audit` job failed until 2026-11-02. Example:
+  `rsa`/RUSTSEC-2023-0071 is an uncompiled transitive of the unused
+  `sqlx-mysql` driver with no upstream fix — silenced in `.cargo/audit.toml`
+  (and not in `deny.toml` only because cargo-deny already passes via its own
+  ignore list). Uncompiled crates such as `quinn-proto` are seen only by
+  cargo-audit, so a green cargo-deny says nothing about cargo-audit.
 
 ## Implementation status
 
