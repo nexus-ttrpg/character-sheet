@@ -21,6 +21,21 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
 
+      # The CLI integration tests and the api e2e tests load the real Foundry
+      # adapter bundle through the V8 sandbox. `adapters/foundry/dist/` is
+      # gitignored (build artifact), so a fresh checkout has none and those
+      # tests would fail — or, worse, silently skip. Build it before `cargo
+      # test`, and set NEXUS_REQUIRE_ADAPTER_BUNDLE so a missing bundle is a
+      # hard failure rather than a silent pass.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Foundry adapter bundle
+        run: pnpm --filter @nexus-ttrpg/foundry-adapter bundle
+
       - name: fmt
         run: cargo fmt --all -- --check
 
@@ -29,6 +44,8 @@ jobs:
 
       - name: test
         run: cargo test --workspace
+        env:
+          NEXUS_REQUIRE_ADAPTER_BUNDLE: "1"
 
       - name: sync-engine boundary check (§15)
         run: |

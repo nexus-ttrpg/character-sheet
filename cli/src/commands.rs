@@ -570,6 +570,43 @@ mod tests {
         workspace_root().join("adapters/foundry/dist/bundle/bundle.js")
     }
 
+    /// True when the pre-built Foundry adapter bundle is available.
+    ///
+    /// `adapters/foundry/dist/` is gitignored (it's a build artifact), so a
+    /// fresh checkout has no bundle until
+    /// `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` runs. Tests that
+    /// need it skip rather than fail, so `cargo test` works for a contributor
+    /// who never touches the TS workspace.
+    ///
+    /// CI sets `NEXUS_REQUIRE_ADAPTER_BUNDLE=1`, which turns a missing bundle
+    /// into a hard failure instead: skipping is a local-convenience path, and
+    /// without the guard a CI job that forgot the bundle step would report
+    /// these tests as passing while running none of them.
+    fn bundle_ready() -> bool {
+        let bundle = adapter_bundle_path();
+        if bundle.exists() {
+            return true;
+        }
+        assert!(
+            !require_adapter_bundle(),
+            "adapter bundle not found at {} but NEXUS_REQUIRE_ADAPTER_BUNDLE is set — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` first",
+            bundle.display()
+        );
+        eprintln!(
+            "skip: adapter bundle not built at {} — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle`",
+            bundle.display()
+        );
+        false
+    }
+
+    /// Whether a missing adapter bundle must fail instead of skip (set in CI).
+    fn require_adapter_bundle() -> bool {
+        matches!(
+            std::env::var("NEXUS_REQUIRE_ADAPTER_BUNDLE").as_deref(),
+            Ok("1") | Ok("true")
+        )
+    }
+
     /// Path to the PF2e fighter fixture (canonical build JSON).
     fn fighter_fixture_path() -> PathBuf {
         workspace_root().join("examples/fixtures/pf2e-level1-fighter.json")
@@ -641,6 +678,9 @@ mod tests {
 
     #[test]
     fn import_creates_character_and_snapshot() {
+        if !bundle_ready() {
+            return;
+        }
         run_local(async {
             let (_tmp, adapters_dir, db_path) = setup_temp_workspace().await;
             let store = connect_store(&db_path).await;
@@ -677,6 +717,9 @@ mod tests {
 
     #[test]
     fn import_diff_push_round_trip() {
+        if !bundle_ready() {
+            return;
+        }
         run_local(async {
             let (_tmp, adapters_dir, db_path) = setup_temp_workspace().await;
             let store = connect_store(&db_path).await;
@@ -727,6 +770,9 @@ mod tests {
 
     #[test]
     fn reimport_creates_child_snapshot_with_parent() {
+        if !bundle_ready() {
+            return;
+        }
         run_local(async {
             let (_tmp, adapters_dir, db_path) = setup_temp_workspace().await;
             let store = connect_store(&db_path).await;
@@ -770,6 +816,9 @@ mod tests {
 
     #[test]
     fn diff_between_two_snapshots() {
+        if !bundle_ready() {
+            return;
+        }
         run_local(async {
             let (_tmp, adapters_dir, db_path) = setup_temp_workspace().await;
             let store = connect_store(&db_path).await;
@@ -816,6 +865,9 @@ mod tests {
 
     #[test]
     fn history_lists_snapshots() {
+        if !bundle_ready() {
+            return;
+        }
         run_local(async {
             let (_tmp, adapters_dir, db_path) = setup_temp_workspace().await;
             let store = connect_store(&db_path).await;
@@ -862,6 +914,9 @@ mod tests {
 
     #[test]
     fn reimport_same_payload_is_idempotent() {
+        if !bundle_ready() {
+            return;
+        }
         run_local(async {
             let (_tmp, adapters_dir, db_path) = setup_temp_workspace().await;
             let store = connect_store(&db_path).await;

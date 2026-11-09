@@ -108,12 +108,47 @@ sync-engine boundary check, `pnpm install --frozen-lockfile`, `cargo xtask
 codegen`, `pnpm test`, the Foundry bundle plus `cargo test -p api --test
 e2e_gate`, `cargo deny check` **and** `cargo audit`, and `pnpm audit`.
 
+`scripts/ci-local.sh` runs all of it in one command and reports PASS/FAIL/SKIP
+per check (`--changed` for staged-only, `--fast` to drop the audits,
+`--dry-run` to see the plan, `--list` for ids). `scripts/install-hooks.sh`
+installs it as a pre-commit hook via `core.hooksPath .githooks`. A missing tool
+reports SKIP, never PASS, so read the summary rather than just the exit code.
+
 Report each result. If a check could not run, say so instead of calling the
 change green. CI is a fresh Linux build, so a local pass is not proof: after a
 push, check the Actions runs.
 
 ## CI & tooling notes
 
+- **The Foundry adapter bundle is a prerequisite for the whole Rust suite.**
+  `adapters/foundry/dist/` is gitignored, so a fresh CI checkout has no bundle,
+  yet the 6 `nexus-cli` integration tests and the `e2e_gate` / `e2e_sf2e` tests
+  all load it through the V8 sandbox. Any job that runs `cargo test --workspace`
+  must first run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` — `rust.yml`
+  and `canary.yml`'s `rust-tests` both do. These tests skip when the bundle is
+  absent so `cargo test` still works for a contributor who never touches the TS
+  workspace (§0.1); CI sets **`NEXUS_REQUIRE_ADAPTER_BUNDLE=1`** to turn a
+  missing bundle into a hard failure, because the silent-skip path previously
+  let `e2e_gate` report a pass in 0.00s while running nothing.
+- **Acknowledged advisories with no upgrade path.** Beyond `rsa` (below),
+  `libsqlite3-sys`/RUSTSEC-2026-0459 is silenced in **both** `.cargo/audit.toml`
+  and `deny.toml`. Unlike `rsa`, that one *is* compiled in (`sqlx/sqlite` enables
+  `sqlx-sqlite/bundled` → `libsqlite3-sys/bundled`); it is silenced because no
+  upgrade can resolve it — the fix is in libsqlite3-sys >=0.39.0, but sqlx 0.8.6
+  requires `^0.30.1` and even sqlx 0.9.0 requires `>=0.30.1, <0.38.0`. Drop the
+  entry once sqlx raises that bound. `astral-tokio-tar`/RUSTSEC-2026-0440
+  (unmaintained, all versions deprecated) is dev-only via `testcontainers` and
+  silenced in `deny.toml` only, since cargo-audit treats `unmaintained` as a
+  non-fatal warning.
+- **`pnpm audit` fixes go in `pnpm-workspace.yaml` `overrides`**, not in a
+  package's manifest — pnpm 11 reads settings there, and `@nexus-ttrpg/schema-zod`
+  is a generated package whose manifest shouldn't be hand-edited. Changing
+  overrides makes pnpm want to purge `node_modules`, which aborts without a TTY;
+  set `CI=true` (as `scripts/ci-local.sh` does) for non-interactive installs.
+- **Linking V8 needs memory.** `deno_core` pulls in V8, and linking the test
+  binaries in parallel on a machine with <10 GiB RAM gets OOM-killed, surfacing
+  as a misleading `error: linking with cc failed`. Use `cargo test -j 1` (which
+  is why `canary.yml` already does); `scripts/ci-local.sh` auto-detects this.
 - **No Node 20.** GitHub deprecated the Node 20 action runtime (Sept 2025);
   actions targeting `node20` are force-run on Node 24 and will eventually fail.
   The app runtime is pinned to Node 22 (`.nvmrc` + `package.json` `engines`

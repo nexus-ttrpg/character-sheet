@@ -21,10 +21,34 @@ ignore = [
     # DB). No risk surface (we perform no RSA operations; the crate is uncompiled),
     # no fix to bump to — acknowledged here rather than left failing CI.
     "RUSTSEC-2023-0071",
-    # bincode (RUSTSEC-2025-0141) and paste (RUSTSEC-2024-0436) are deliberately
+    # libsqlite3-sys 0.30.1 — RUSTSEC-2026-0459 (CVE-2026-119375, 6.8 medium).
+    # Bundled SQLite before 3.54.0 can return uninitialized page-cache memory
+    # when a database is opened next to a sibling `-wal` file with a different
+    # page size.
+    #
+    # Unlike `rsa` above, this one IS compiled in — `sqlx/sqlite` turns on
+    # `sqlx-sqlite/bundled` -> `libsqlite3-sys/bundled`:
+    #   $ cargo tree -e features -i libsqlite3-sys --all-features
+    # It is silenced because no upgrade path exists, not because it is
+    # unreachable. The fix landed in libsqlite3-sys >=0.39.0, but sqlx 0.8.6
+    # requires `^0.30.1` and even sqlx 0.9.0 (latest, crates.io index checked
+    # 2026-11-09) requires `>=0.30.1, <0.38.0` — so no sqlx release can resolve
+    # a patched libsqlite3-sys today.
+    #
+    # Exposure: local vector only, requiring the process to open a database plus
+    # a `-wal` a less-trusted party could have written. SQLite is the offline
+    # CLI store (§12), which creates its own file; the hosted API uses Postgres.
+    #
+    # REVIEW: remove once sqlx raises its libsqlite3-sys bound to >=0.39.
+    # Mirrored in deny.toml — keep both in sync.
+    "RUSTSEC-2026-0459",
+    # bincode (RUSTSEC-2025-0141), paste (RUSTSEC-2024-0436) and
+    # astral-tokio-tar (RUSTSEC-2026-0440) are deliberately
     # NOT silenced here: cargo-audit treats `unmaintained` as a non-fatal warning
     # by default, so they don't fail CI and remain useful signal. Both are
-    # unmaintained transitive deps of deno_core with no safe upgrade and are
+    # unmaintained transitive deps with no safe upgrade (bincode and paste via
+    # deno_core; astral-tokio-tar via the dev-only testcontainers tree) and are
     # already acknowledged (silenced) in deny.toml, where cargo-deny treats them
-    # as fatal.
+    # as fatal. They surface here as the "allowed warnings" line in the
+    # cargo-audit output, which does not fail the run.
 ]

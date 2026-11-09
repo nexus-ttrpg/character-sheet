@@ -50,6 +50,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p api --test e2e_gate -- --nocapture
         name: E2E gate — Foundry→canonical→Foundry divergent merge
+        env:
+          # Fail if the bundle is missing instead of skipping the gate silently.
+          NEXUS_REQUIRE_ADAPTER_BUNDLE: "1"
 
   live-canary:
     runs-on: ubuntu-latest
@@ -68,7 +71,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # `cargo test --workspace` includes the CLI integration tests and the api
+      # e2e tests, which load the real Foundry adapter bundle. It's a gitignored
+      # build artifact, so build it first (see rust.yml for the full rationale).
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @nexus-ttrpg/foundry-adapter bundle
+        name: Build Foundry adapter bundle
       - uses: dtolnay/rust-toolchain@1.97
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace -j 1
         name: Rust test suite (canary)
+        env:
+          NEXUS_REQUIRE_ADAPTER_BUNDLE: "1"

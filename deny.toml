@@ -13,6 +13,46 @@ ignore = [
     "RUSTSEC-2025-0141",
     # paste is no longer maintained; transitive dep of deno_core (v8 macro).
     "RUSTSEC-2024-0436",
+    # libsqlite3-sys 0.30.1 — RUSTSEC-2026-0459 (CVE-2026-119375, 6.8 medium):
+    # bundled SQLite before 3.54.0 can return uninitialized page-cache memory
+    # when a database is opened alongside a sibling `-wal` file whose page size
+    # differs from the database's.
+    #
+    # The vulnerable copy IS compiled in: `sqlx/sqlite` enables
+    # `sqlx-sqlite/bundled` -> `libsqlite3-sys/bundled`, so this is not a
+    # resolved-but-uncompiled crate (verify with
+    # `cargo tree -e features -i libsqlite3-sys --all-features`).
+    #
+    # NO UPGRADE PATH EXISTS. The advisory is fixed in libsqlite3-sys >=0.39.0,
+    # but sqlx cannot resolve one: sqlx 0.8.6 requires `^0.30.1`, and sqlx
+    # 0.9.0 — the latest release, checked against the crates.io index on
+    # 2026-11-09 — still requires `>=0.30.1, <0.38.0`. Pinning
+    # libsqlite3-sys 0.39 would simply fail to resolve, and bumping sqlx to 0.9
+    # is a breaking change that does not fix this advisory either.
+    #
+    # Exposure is limited: the attack vector is local and requires the process
+    # to open a database file together with a `-wal` file that a less-trusted
+    # party could have written. SQLite here is the offline CLI store (§12),
+    # which creates and owns its own database file, plus tests; the hosted API
+    # runs on PostgreSQL. A user who opens an untrusted `.sqlite`/`-wal` pair
+    # with `nexus` is the realistic risk surface.
+    #
+    # REVIEW: drop this entry as soon as sqlx raises its libsqlite3-sys bound
+    # to >=0.39 (watch https://github.com/launchbadge/sqlx for the release that
+    # tracks rusqlite 0.41). Keep in sync with .cargo/audit.toml.
+    "RUSTSEC-2026-0459",
+    # astral-tokio-tar 0.6.4 — RUSTSEC-2026-0440 (unmaintained). Astral ended
+    # maintenance on 2026-11-03 and ALL versions are deprecated, so there is no
+    # safe upgrade; the suggested replacement (`tar-codec`) is a different crate
+    # that only upstream can adopt.
+    #
+    # Dev-only and unreachable from any shipped artifact: it arrives via
+    # testcontainers -> testcontainers-modules, used solely by the
+    # `postgres_integration` test (which already skips without Docker). This is
+    # the same reasoning that puts `testcontainers` in `skip-tree` below.
+    #
+    # REVIEW: drop when testcontainers migrates off astral-tokio-tar.
+    "RUSTSEC-2026-0440",
 ]
 
 [licenses]

@@ -9,3 +9,24 @@ packages:
 # only this one build script is permitted to run).
 allowBuilds:
   esbuild: true
+
+# Supply-chain overrides (§17) — force patched versions of transitive deps
+# flagged high by `pnpm audit`. Each entry is the advisory's patched floor.
+# Adapters run in-process in the V8 sandbox, so TS deps matter more than usual.
+# Remove an entry once every dependent's own range has moved past it.
+overrides:
+  # GHSA-2883-xcg3-v3hh — maxTotalMergeKeys does not limit CPU use for empty
+  # merge sources. Via json-schema-to-typescript (+ its json-schema-ref-parser).
+  # 4.3.2 is the newest 4.x (the `v4-legacy` tag); 5.x is a major bump its
+  # dependents don't accept yet.
+  js-yaml: "^4.3.2"
+  # GHSA-68fv-2mgg-jv7q — event-loop DoS via indexed source-map section
+  # offsets. Via postcss, from both vitest>vite and tsup>postcss-load-config.
+  source-map-js: "^1.2.2"
+  # GHSA-587h-7wmj-h5pm — launch-editor's fs.existsSync() check is bypassable
+  # on Windows. Via vitest; vitest 4.1 accepts vite ^6 || ^7 || ^8.
+  vite: "^8.2.4"
+  # GHSA-mrhx-c7xc-m3w5 — memory exhaustion validating oversized constrained
+  # collections. Direct dep of the generated @nexus-ttrpg/schema-zod package,
+  # overridden here so the generated manifest stays untouched by hand.
+  zod: "^4.6.6"

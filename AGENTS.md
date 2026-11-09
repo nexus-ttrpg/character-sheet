@@ -25,30 +25,52 @@ locally.** They mirror `.github/workflows/` one for one. Weaker variants
 (`cargo clippy --tests` without `-D warnings`, cargo-deny without cargo-audit,
 skipping the e2e gate) have already let CI failures through.
 
+**The fast path: `scripts/ci-local.sh` runs every check below**, reports
+PASS/FAIL/SKIP per check, and exits non-zero if any failed. A check whose tool
+is missing is reported SKIP, never PASS — a check that could not run is not a
+green check. `scripts/install-hooks.sh` wires it in as a pre-commit hook
+(`--changed`, so only the suites your staged files touch run). The commands
+below are still the ground truth; the script just mirrors them.
+
 Prerequisites: Node 22 + pnpm 11, `cargo-deny`, `cargo-audit`, and Docker
 running (otherwise `postgres_integration` skips silently).
 
+**The Foundry adapter bundle is a prerequisite for `cargo test --workspace`,
+not just for the e2e gate.** `adapters/foundry/dist/` is gitignored, so a fresh
+checkout has no bundle, and the 6 CLI integration tests plus `e2e_gate` /
+`e2e_sf2e` all load it through the V8 sandbox. Build it *before* `cargo test`
+and set `NEXUS_REQUIRE_ADAPTER_BUNDLE=1`, which turns a missing bundle into a
+hard failure instead of letting those tests skip themselves and report a pass
+having run nothing.
+
 ```
+# canary.yml — adapter bundle (prerequisite for the Rust suite, build it first)
+pnpm install --frozen-lockfile
+pnpm --filter @nexus-ttrpg/foundry-adapter bundle
+
 # rust.yml — test + lint + boundary
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+NEXUS_REQUIRE_ADAPTER_BUNDLE=1 cargo test --workspace
 ! cargo tree -p sync-engine --prefix none | grep -qE '^(store|api|adapter-host) v'   # boundary: must exit 0
 
 # rust.yml — codegen staleness, and ts.yml
-pnpm install --frozen-lockfile
 cargo xtask codegen        # then commit any change it makes to the generated files
 pnpm test
 
-# canary.yml — e2e gate
-pnpm --filter @nexus-ttrpg/foundry-adapter bundle
-cargo test -p api --test e2e_gate
+# canary.yml — e2e gate (bundle already built above)
+NEXUS_REQUIRE_ADAPTER_BUNDLE=1 cargo test -p api --test e2e_gate
 
 # audit.yml — all three; cargo-audit and cargo-deny find different things
 cargo deny check
 cargo audit                # reads .cargo/audit.toml; scans the whole Cargo.lock
 pnpm audit --audit-level high   # informational (continue-on-error in CI)
 ```
+
+On a memory-constrained machine, linking the `deno_core`/V8 crates in parallel
+gets OOM-killed and surfaces as a bogus `linking with cc failed` error — pass
+`-j 1` to `cargo test`/`cargo clippy` (`scripts/ci-local.sh` detects this and
+does it for you under 10 GiB of RAM).
 
 Report the result of each check. If one could not run (missing tool, Docker
 down), **say so explicitly** instead of calling the change green. A local pass

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# pre-commit — run the GitHub Actions checks locally before the commit lands.
+#
+# Install with:  scripts/install-hooks.sh
+# (which just sets `git config core.hooksPath .githooks`)
+#
+# By default this runs only the suites affected by the staged files, so a
+# TS-only change does not pay for a full Rust rebuild. To run everything:
+#
+#     NEXUS_PRECOMMIT_SCOPE=all git commit ...
+#
+# Other knobs (all forwarded to scripts/ci-local.sh):
+#
+#     NEXUS_PRECOMMIT_FAST=1      skip the three audit jobs (network-dependent)
+#     SKIP_CHECKS=clippy,codegen  skip checks by id
+#     git commit --no-verify      bypass the hook entirely
+#
+# Set NEXUS_PRECOMMIT=0 to disable the hook without uninstalling it.
+
+set -uo pipefail
+
+[[ "${NEXUS_PRECOMMIT:-1}" == "0" ]] && exit 0
+
+REPO_ROOT="$(git rev-parse --show-toplevel)" || exit 1
+RUNNER="$REPO_ROOT/scripts/ci-local.sh"
+
+if [[ ! -x "$RUNNER" ]]; then
+    if [[ -f "$RUNNER" ]]; then
+        echo "pre-commit: $RUNNER is not executable — run: chmod +x scripts/ci-local.sh" >&2
+        exit 1
+    fi
+    echo "pre-commit: $RUNNER not found; skipping CI parity checks." >&2
+    exit 0
+fi
+
+# Mid-merge or mid-rebase, the index is not the developer's own change; running
+# the full suite there is noise and often fails for unrelated reasons.
+GIT_DIR="$(git rev-parse --git-dir)"
+for marker in MERGE_HEAD REBASE_HEAD CHERRY_PICK_HEAD; do
+    if [[ -e "$GIT_DIR/$marker" ]]; then
+        echo "pre-commit: $marker present (merge/rebase in progress) — skipping CI parity checks."
+        exit 0
+    fi
+done
+
+args=()
+case "${NEXUS_PRECOMMIT_SCOPE:-changed}" in
+    all)     args+=(--all) ;;
+    changed) args+=(--changed) ;;
+    *)       args+=(--changed) ;;
+esac
+[[ "${NEXUS_PRECOMMIT_FAST:-0}" == "1" ]] && args+=(--fast)
+
+exec "$RUNNER" "${args[@]}"

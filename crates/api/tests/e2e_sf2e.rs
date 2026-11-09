@@ -46,6 +46,38 @@ fn adapter_bundle_path() -> std::path::PathBuf {
     workspace_root().join("adapters/foundry/dist/bundle/bundle.js")
 }
 
+/// Whether a missing adapter bundle must fail instead of skip (set in CI).
+///
+/// `adapters/foundry/dist/` is gitignored, so a fresh checkout has no bundle
+/// until `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` runs. Skipping
+/// keeps `cargo test` usable for contributors who never touch the TS
+/// workspace; CI sets `NEXUS_REQUIRE_ADAPTER_BUNDLE=1` so a job that forgot
+/// the bundle step fails loudly instead of reporting a pass having run nothing.
+fn require_adapter_bundle() -> bool {
+    matches!(
+        std::env::var("NEXUS_REQUIRE_ADAPTER_BUNDLE").as_deref(),
+        Ok("1") | Ok("true")
+    )
+}
+
+/// True when the pre-built Foundry adapter bundle is available.
+fn bundle_ready() -> bool {
+    let bundle = adapter_bundle_path();
+    if bundle.exists() {
+        return true;
+    }
+    assert!(
+        !require_adapter_bundle(),
+        "adapter bundle not found at {} but NEXUS_REQUIRE_ADAPTER_BUNDLE is set — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle` first",
+        bundle.display()
+    );
+    eprintln!(
+        "skip: adapter bundle not built at {} — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle`",
+        bundle.display()
+    );
+    false
+}
+
 fn mechanic_fixture_path() -> std::path::PathBuf {
     workspace_root().join("examples/fixtures/sf2e-level5-mechanic.json")
 }
@@ -120,8 +152,8 @@ async fn send_get(router: &BoxRouter, uri: &str, auth: &str) -> (StatusCode, ser
 
 #[tokio::test]
 async fn e2e_sf2e_divergent_merge_on_credits() {
-    if !adapter_bundle_path().exists() {
-        eprintln!("skip: adapter bundle not built — run `pnpm --filter @nexus-ttrpg/foundry-adapter bundle`");
+    // Skip locally when the bundle isn't built; fail in CI (see bundle_ready).
+    if !bundle_ready() {
         return;
     }
 
